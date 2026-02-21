@@ -45,12 +45,17 @@ function App() {
     },
     trades: [],
     logs: [],
-    agentWeights: []
+    agentWeights: [],
+    learnings: []
   });
   const [shareStatus, setShareStatus] = useState(null);
+  const [runtimeStatus, setRuntimeStatus] = useState(null);
+  const [runSymbol, setRunSymbol] = useState('AAPL');
+  const [runRegime, setRunRegime] = useState('normal');
+  const [runningCycle, setRunningCycle] = useState(false);
+  const [dataMode, setDataMode] = useState('live');
 
-  useEffect(() => {
-    // Generate mock data representing the AlphaMind AI paper trading backend
+  const buildMockData = () => {
     const labels = Array.from({ length: 30 }, (_, i) => `Day ${i + 1}`);
     let equity = 10000;
     const equityCurve = [equity];
@@ -92,7 +97,7 @@ function App() {
       return { tech: 0.6, event: 0.2, risk: 0.2 }; // Normal Technical
     });
 
-    setData({
+    return {
       equityCurve,
       labels,
       metrics: {
@@ -112,8 +117,144 @@ function App() {
         { topic: 'Event Impact', insight: 'Recent supply chain rumors heavily impacted AAPL. The Event Agent is currently overweighting sentiment data for consumer electronics by 1.5x.' },
         { topic: 'Risk Sizing', insight: 'Due to consecutive winning trades, the portfolio beta is sitting at 1.15. Position sizing for the next 3 trades will be hard-capped at 3% to preserve capital.' }
       ]
+    };
+  };
+
+  const normalizeDashboardData = (payload) => {
+    const decisions = payload?.decisions || [];
+    const tradesRaw = payload?.trades || [];
+    const events = payload?.events || [];
+    const metrics = payload?.metrics || {};
+
+    const decisionBySymbol = new Map();
+    decisions.forEach((d) => {
+      if (!decisionBySymbol.has(d.symbol)) {
+        decisionBySymbol.set(d.symbol, d.payload || {});
+      }
     });
+
+    const trades = tradesRaw.map((t, idx) => {
+      const fill = Number(t.fill_price ?? 0);
+      const exit = Number(t.exit_price ?? t.fill_price ?? 0);
+      const commission = Number(t.commission_fee ?? 0);
+      const direction = t.action === 'SELL' ? 1 : -1;
+      const raw = fill ? ((direction * (exit - fill)) / fill) : 0;
+      const profit = Number(((raw - commission) * 100).toFixed(2));
+      const decisionMeta = decisionBySymbol.get(t.symbol) || {};
+      const timestamp = t.timestamp ? new Date(t.timestamp) : new Date();
+
+      return {
+        id: t.id || `trade-${idx}`,
+        symbol: t.symbol || 'N/A',
+        action: t.action || 'NO_TRADE',
+        profit,
+        time: timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        entry: Number(t.desired_entry ?? t.fill_price ?? 0),
+        confidence: Number(decisionMeta.confidence ?? 0),
+        reason: decisionMeta.reason || t.exit_reason || 'No explanation available.',
+        holding: t.status === 'OPEN' ? 'Open' : 'Closed',
+        target: Number(t.target ?? t.fill_price ?? 0),
+        stopLoss: Number(t.stop_loss ?? t.fill_price ?? 0),
+        exitPrice: exit,
+        hitTarget: String(t.exit_reason || '').toLowerCase().includes('target'),
+      };
+    });
+
+    const labels = trades.length > 0 ? trades.map((_, i) => `Trade ${i + 1}`) : ['Now'];
+    let equity = 10000;
+    const equityCurve = trades.length > 0
+      ? trades.map((trade) => {
+          equity *= 1 + (trade.profit / 100);
+          return Number(equity.toFixed(2));
+        })
+      : [equity];
+
+    const logs = decisions.slice(0, 20).map((d, idx) => ({
+      id: idx + 1,
+      timestamp: d.timestamp ? new Date(d.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A',
+      agent: 'Fusion Agent',
+      level: 'DECISION',
+      type: d.market_regime || 'normal',
+      message: `${d.symbol}: ${d.decision || 'NO_TRADE'} (${Math.round((d.confidence || 0) * 100)}%)`,
+      detail: d.payload?.reason || 'No reason available',
+    }));
+
+    const agentWeights = decisions.length > 0
+      ? decisions.map((d) => {
+          const reason = String(d.payload?.reason || '').toLowerCase();
+          if (reason.includes('regime: earnings')) return { tech: 0.3, event: 0.6, risk: 0.1 };
+          if (reason.includes('regime: volatile')) return { tech: 0.4, event: 0.2, risk: 0.4 };
+          return { tech: 0.6, event: 0.2, risk: 0.2 };
+        })
+      : [{ tech: 0.6, event: 0.2, risk: 0.2 }];
+
+    return {
+      labels,
+      equityCurve,
+      metrics: {
+        winRate: Number((metrics.win_rate || 0) * 100),
+        profitFactor: Number(metrics.profit_factor || 0),
+        totalReturn: Number((((equityCurve.at(-1) || 10000) - 10000) / 10000) * 100),
+        maxDrawdown: Number(-((metrics.max_drawdown || 0) * 100)),
+        sharpeRatio: 0,
+        alpha: 0,
+      },
+      trades,
+      logs,
+      agentWeights,
+      learnings: [
+        { topic: 'Live Feed', insight: `${events.length} analytics events recorded.` },
+        { topic: 'Execution', insight: `${decisions.length} decisions processed through the API.` },
+      ],
+    };
+  };
+
+  const loadDashboard = async () => {
+    const response = await fetch(`${API_BASE_URL}/dashboard`);
+    if (!response.ok) {
+      throw new Error(`dashboard request failed (${response.status})`);
+    }
+    const payload = await response.json();
+    setData(normalizeDashboardData(payload));
+  };
+
+  const loadDashboardWithFallback = async () => {
+    try {
+      await loadDashboard();
+      setDataMode('live');
+      setRuntimeStatus(null);
+    } catch (error) {
+      setData(buildMockData());
+      setDataMode('mock');
+      setRuntimeStatus({ type: 'error', message: 'Backend unavailable. Showing mock data.' });
+    }
+  };
+
+  useEffect(() => {
+    loadDashboardWithFallback();
   }, []);
+
+  const handleRunCycle = async () => {
+    setRuntimeStatus(null);
+    setRunningCycle(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/trade/run`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symbol: runSymbol, market_regime: runRegime }),
+      });
+      if (!response.ok) {
+        throw new Error(`trade run failed (${response.status})`);
+      }
+      await loadDashboardWithFallback();
+      setRuntimeStatus({ type: 'success', message: `Run completed for ${runSymbol} (${runRegime}).` });
+      trackEvent('run_cycle_completed', { symbol: runSymbol, regime: runRegime });
+    } catch (error) {
+      setRuntimeStatus({ type: 'error', message: 'Run failed. Check backend logs.' });
+    } finally {
+      setRunningCycle(false);
+    }
+  };
 
   const trackEvent = async (name, payload = {}) => {
     const event = { name, payload, timestamp: new Date().toISOString() };
@@ -394,6 +535,29 @@ function App() {
           <p className="text-slate-400 mt-1 text-sm">Autonomous Multi-Agent Trading Intelligence</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          <input
+            value={runSymbol}
+            onChange={(e) => setRunSymbol(e.target.value.toUpperCase())}
+            className="px-3 py-2 rounded-lg bg-slate-900/60 border border-slate-700 text-xs text-slate-100 w-24"
+            placeholder="Symbol"
+          />
+          <select
+            value={runRegime}
+            onChange={(e) => setRunRegime(e.target.value)}
+            className="px-3 py-2 rounded-lg bg-slate-900/60 border border-slate-700 text-xs text-slate-100"
+          >
+            <option value="normal">normal</option>
+            <option value="volatile">volatile</option>
+            <option value="earnings">earnings</option>
+          </select>
+          <button
+            type="button"
+            onClick={handleRunCycle}
+            disabled={runningCycle}
+            className="flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/30 transition-colors disabled:opacity-50"
+          >
+            {runningCycle ? 'Running...' : 'Run Cycle'}
+          </button>
           <button
             type="button"
             onClick={handleShareClick}
@@ -421,6 +585,14 @@ function App() {
           {shareStatus.message}
         </div>
       )}
+      {runtimeStatus && (
+        <div className={`mb-6 px-4 py-2 rounded-lg border text-xs font-medium ${runtimeStatus.type === 'success' ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-300' : 'border-red-400/40 bg-red-400/10 text-red-300'}`}>
+          {runtimeStatus.message}
+        </div>
+      )}
+      <div className="mb-4 text-[10px] text-slate-400">
+        Data source: <span className={`font-semibold ${dataMode === 'live' ? 'text-emerald-300' : 'text-amber-300'}`}>{dataMode}</span>
+      </div>
 
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 flex flex-col gap-6">
