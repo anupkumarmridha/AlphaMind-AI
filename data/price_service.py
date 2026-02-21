@@ -9,8 +9,11 @@ class PriceService:
         """
         Fetch historical price data for a symbol using yfinance.
         """
-        ticker = yf.Ticker(symbol)
-        history = ticker.history(period=period, interval=interval)
+        try:
+            ticker = yf.Ticker(symbol)
+            history = ticker.history(period=period, interval=interval)
+        except Exception:
+            return []
         
         price_data_list = []
         for index, row in history.iterrows():

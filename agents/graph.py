@@ -34,6 +34,8 @@ def fetch_market_data(state: TradingState):
     print(f"[{symbol}] Fetching Market Data...")
     prices = PriceService.fetch_price_history(symbol, period="50d")
     news = NewsService.fetch_news(symbol, max_items=5)
+    if not prices:
+        print(f"[{symbol}] Warning: No price data fetched.")
     return {"price_history": prices, "news_list": news}
 
 def run_technical_agent(state: TradingState):
@@ -67,6 +69,17 @@ def execute_trade(state: TradingState):
     if decision["decision"] == "NO_TRADE":
         print(f"[{state['symbol']}] Result: NO TRADE")
         return {"trade_executed": None}
+
+    if not state.get("price_history"):
+        print(f"[{state['symbol']}] Result: NO TRADE (no price data)")
+        state["decision_data"]["decision"] = "NO_TRADE"
+        state["decision_data"]["confidence"] = 0.0
+        state["decision_data"]["position_size"] = 0.0
+        state["decision_data"]["reason"] = (
+            f"{state['decision_data'].get('reason', '')} | "
+            "Trade blocked: no price data available for execution."
+        )
+        return {"trade_executed": None, "decision_data": state["decision_data"]}
         
     current_price = state["price_history"][-1].close
     trade = trade_agent.execute_trade(decision, current_price, state["symbol"])

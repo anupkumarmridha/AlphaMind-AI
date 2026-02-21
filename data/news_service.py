@@ -9,8 +9,11 @@ class NewsService:
         """
         Fetch recent news articles for a symbol using yfinance.
         """
-        ticker = yf.Ticker(symbol)
-        raw_news = ticker.news
+        try:
+            ticker = yf.Ticker(symbol)
+            raw_news = ticker.news or []
+        except Exception:
+            return []
         
         news_data_list = []
         for item in raw_news[:max_items]:

@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any, Dict, Optional
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -69,7 +69,10 @@ def run_trade(request: TradeRunRequest):
         "symbol": request.symbol,
         "market_regime": request.market_regime or "normal",
     }
-    result = alphamind_graph.invoke(state)
+    try:
+        result = alphamind_graph.invoke(state)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"pipeline execution failed: {exc}") from exc
 
     decision = result.get("decision_data", {})
     trade = result.get("trade_executed")
