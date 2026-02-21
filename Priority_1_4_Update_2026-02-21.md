@@ -59,3 +59,87 @@ Status: complete
 
 ## Ready For Priority 5
 Yes. Priority 1-4 baseline is stable enough to proceed with frontend integration against `/trade/run` and `/dashboard`.
+
+---
+
+# Priority 5 Update
+
+Date: 2026-02-21
+Branch: codex/priority-1-4-foundation
+
+## Scope Completed
+- Frontend integrated with live backend endpoints:
+  - `GET /dashboard`
+  - `POST /trade/run`
+- Added runtime controls in `frontend/src/App.jsx`:
+  - symbol input
+  - market regime selector
+  - `Run Cycle` action
+- Added live/mock fallback mode:
+  - live mode when backend is reachable
+  - mock mode fallback when backend is unavailable
+- Added runtime status messages for run success/failure.
+
+## Validation Performed
+1. Frontend static checks
+- `npm run lint`: pass
+- `npm run build`: pass
+
+2. Runtime checks
+- `/trade/run` request from UI path executes and returns decision payload.
+- `/dashboard` refresh path updates metrics/trades/decisions/events in UI data mapping.
+
+## Priority 5 Review Fixes Applied
+- Removed unused catch variables (`catch {}`) to satisfy lint.
+- Wrapped dashboard loaders in `useCallback` and fixed hook dependency warnings.
+- Resolved unused chart constants lint issue (`DOUGHNUT_DATA`, `DOUGHNUT_OPTIONS`).
+
+## Residual Risks (Non-blocking)
+1. Backend event analysis still depends on local Ollama availability.
+- Without Ollama, event reason degrades to extraction error text.
+
+2. Historical dashboard metrics remain bounded by current persisted trade lifecycle.
+- Open trades are visible; performance metrics are calculated from closed trades.
+
+## Ready For Next Work
+Yes. Priority 5 is complete and validated.
+
+---
+
+# Priority 6 Update
+
+Date: 2026-02-21
+Branch: codex/priority-1-4-foundation
+
+## Scope Completed
+- Added `pytest` discovery/config:
+  - `pytest.ini` with test discovery scoped to `tests/`
+- Added deterministic baseline tests:
+  - `tests/test_priority6_baseline.py`
+- Added dev test dependency tracking:
+  - `requirements-dev.txt` with `pytest`
+
+## Test Coverage Added
+1. Fusion decision logic
+- Hard risk veto produces `NO_TRADE` with zero confidence/position size.
+- Strong bullish setup produces `BUY` with positive confidence/position size.
+
+2. Trade execution lifecycle
+- Trade creation from fusion decision.
+- Target-hit close path and movement from `open_trades` to `trade_history`.
+
+3. Evaluation metrics contract
+- Closed trade aggregation produces expected metric keys and valid bounds.
+
+## Validation Performed
+- Command:
+  - `/Users/anup/Developer/GenAI/CodexAgent/AlphaMind-AI/.venv/bin/python -m pytest -q`
+- Result:
+  - `4 passed in 0.60s`
+
+## Residual Notes
+- Existing script-style files (`test_*.py` in repo root) remain for manual runs.
+- Automated suite now uses `tests/` and is isolated from external services (no yfinance/Ollama dependency).
+
+## Ready For Next Work
+Yes. Priority 6 baseline testing is complete and passing.

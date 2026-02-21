@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -55,7 +55,7 @@ function App() {
   const [runningCycle, setRunningCycle] = useState(false);
   const [dataMode, setDataMode] = useState('live');
 
-  const buildMockData = () => {
+  const buildMockData = useCallback(() => {
     const labels = Array.from({ length: 30 }, (_, i) => `Day ${i + 1}`);
     let equity = 10000;
     const equityCurve = [equity];
@@ -118,9 +118,9 @@ function App() {
         { topic: 'Risk Sizing', insight: 'Due to consecutive winning trades, the portfolio beta is sitting at 1.15. Position sizing for the next 3 trades will be hard-capped at 3% to preserve capital.' }
       ]
     };
-  };
+  }, []);
 
-  const normalizeDashboardData = (payload) => {
+  const normalizeDashboardData = useCallback((payload) => {
     const decisions = payload?.decisions || [];
     const tradesRaw = payload?.trades || [];
     const events = payload?.events || [];
@@ -207,32 +207,32 @@ function App() {
         { topic: 'Execution', insight: `${decisions.length} decisions processed through the API.` },
       ],
     };
-  };
+  }, []);
 
-  const loadDashboard = async () => {
+  const loadDashboard = useCallback(async () => {
     const response = await fetch(`${API_BASE_URL}/dashboard`);
     if (!response.ok) {
       throw new Error(`dashboard request failed (${response.status})`);
     }
     const payload = await response.json();
     setData(normalizeDashboardData(payload));
-  };
+  }, [API_BASE_URL, normalizeDashboardData]);
 
-  const loadDashboardWithFallback = async () => {
+  const loadDashboardWithFallback = useCallback(async () => {
     try {
       await loadDashboard();
       setDataMode('live');
       setRuntimeStatus(null);
-    } catch (error) {
+    } catch {
       setData(buildMockData());
       setDataMode('mock');
       setRuntimeStatus({ type: 'error', message: 'Backend unavailable. Showing mock data.' });
     }
-  };
+  }, [buildMockData, loadDashboard]);
 
   useEffect(() => {
     loadDashboardWithFallback();
-  }, []);
+  }, [loadDashboardWithFallback]);
 
   const handleRunCycle = async () => {
     setRuntimeStatus(null);
@@ -249,7 +249,7 @@ function App() {
       await loadDashboardWithFallback();
       setRuntimeStatus({ type: 'success', message: `Run completed for ${runSymbol} (${runRegime}).` });
       trackEvent('run_cycle_completed', { symbol: runSymbol, regime: runRegime });
-    } catch (error) {
+    } catch {
       setRuntimeStatus({ type: 'error', message: 'Run failed. Check backend logs.' });
     } finally {
       setRunningCycle(false);
@@ -265,7 +265,7 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(event),
       });
-    } catch (error) {
+    } catch {
       // Swallow errors to avoid blocking UI on analytics.
     }
   };
@@ -295,7 +295,7 @@ function App() {
         setShareStatus({ type: 'success', message: 'Snapshot shared.' });
         trackEvent('share_completed', { method: 'web_share' });
         return;
-      } catch (error) {
+      } catch {
         // Fall back to clipboard if share is cancelled or unsupported.
       }
     }
@@ -304,7 +304,7 @@ function App() {
       await navigator.clipboard.writeText(`${shareText} ${shareUrl}`);
       setShareStatus({ type: 'success', message: 'Snapshot copied to clipboard.' });
       trackEvent('share_completed', { method: 'clipboard' });
-    } catch (error) {
+    } catch {
       setShareStatus({ type: 'error', message: 'Unable to share right now.' });
     }
   };
@@ -455,7 +455,7 @@ function App() {
   const wins = data.trades.filter(t => t.profit > 0).length;
   const losses = data.trades.filter(t => t.profit <= 0).length;
 
-  const doughnutData = {
+  const DOUGHNUT_DATA = {
     labels: ['Winning Trades', 'Losing Trades'],
     datasets: [
       {
@@ -468,7 +468,7 @@ function App() {
     ]
   };
 
-  const doughnutOptions = {
+  const DOUGHNUT_OPTIONS = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
