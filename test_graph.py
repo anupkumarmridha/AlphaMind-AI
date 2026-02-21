@@ -1,6 +1,3 @@
-import os
-os.environ["OPENAI_API_KEY"] = "dummy_key" # Prevent Langchain from crashing on init
-
 from agents.graph import alphamind_graph
 
 def run():
@@ -11,8 +8,8 @@ def run():
         "market_regime": "volatile"
     }
 
-    # Run the compiled LangGraph app
-    # Warning: Without a valid OPENAI_API_KEY, the Event Agent will catch the exception and return a dummy output
+    # Run the compiled LangGraph app.
+    # If Ollama/models are unavailable, EventAgent degrades gracefully in the pipeline.
     result = alphamind_graph.invoke(initial_state)
     
     print("\n--- LangGraph Pipeline Completed ---")

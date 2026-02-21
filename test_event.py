@@ -1,4 +1,3 @@
-import os
 from data.news_service import NewsService
 from agents.event_agent import EventAgent
 
@@ -6,9 +5,8 @@ def run():
     print("Fetching news for AAPL...")
     news = NewsService.fetch_news("AAPL", max_items=3)
     
-    if not os.getenv("OPENAI_API_KEY"):
-         print("No OPENAI_API_KEY found in environment. The LLM calls will fail.")
-         print("Export OPENAI_API_KEY='your_key' to test the actual LangChain inference.")
+    print("Ensure your local Ollama is running and required models are available.")
+    print("Optional env vars: OLLAMA_BASE_URL, OLLAMA_MODEL, EVENT_TRIAGE_MODEL, EVENT_EXTRACT_MODEL.")
     
     agent = EventAgent()
     print("\nRunning Event Agent...")

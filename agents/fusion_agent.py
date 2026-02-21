@@ -1,5 +1,4 @@
-import re
-from typing import Dict, Any
+from typing import Any, Dict, Union
 
 class FusionAgent:
     @staticmethod
@@ -13,14 +12,30 @@ class FusionAgent:
         return data
 
     @staticmethod
-    def synthesize(technical_toon: str, event_toon: str, risk_toon: str, market_regime: str = "normal") -> Dict[str, Any]:
+    def _as_dict(payload: Union[str, Dict[str, Any]]) -> Dict[str, Any]:
+        if isinstance(payload, dict):
+            return payload
+        if isinstance(payload, str):
+            return FusionAgent._parse_toon(payload)
+        return {}
+
+    @staticmethod
+    def synthesize(
+        technical: Union[str, Dict[str, Any]],
+        event: Union[str, Dict[str, Any]],
+        risk: Union[str, Dict[str, Any]],
+        market_regime: str = "normal",
+        context: Union[str, Dict[str, Any], None] = None,
+        dynamic_weights: Dict[str, float] | None = None,
+    ) -> Dict[str, Any]:
         """
         Fuses signals using Regime-Dependent Weights.
         Returns the final trade decision, confidence, and position size.
         """
-        tech_data = FusionAgent._parse_toon(technical_toon)
-        event_data = FusionAgent._parse_toon(event_toon)
-        risk_data = FusionAgent._parse_toon(risk_toon)
+        tech_data = FusionAgent._as_dict(technical)
+        event_data = FusionAgent._as_dict(event)
+        risk_data = FusionAgent._as_dict(risk)
+        context_data = FusionAgent._as_dict(context) if context is not None else {}
 
         try:
             tech_score = float(tech_data.get('technical_score', 0))
@@ -36,6 +51,14 @@ class FusionAgent:
             risk_score = float(risk_data.get('risk_score', 0))
         except ValueError:
             risk_score = 0
+        try:
+            context_score = float(context_data.get('historical_win_rate', 0.5))
+        except ValueError:
+            context_score = 0.5
+        try:
+            confidence_adjustment = float(context_data.get('confidence_adjustment', 0.0))
+        except ValueError:
+            confidence_adjustment = 0.0
 
         risk_level = risk_data.get('risk_level', 'LOW').upper()
 
@@ -55,9 +78,13 @@ class FusionAgent:
             weights = {"technical": 0.4, "event": 0.2, "context": 0.1, "risk": 0.6}
         else: # normal
             weights = {"technical": 0.5, "event": 0.2, "context": 0.1, "risk": 0.3}
-
-        # For MVP we don't have context agent yet, we'll allocate its weight to technical
-        weights["technical"] += weights.get("context", 0)
+        if dynamic_weights:
+            for key in ("technical", "event", "context", "risk"):
+                if key in dynamic_weights:
+                    try:
+                        weights[key] = float(dynamic_weights[key])
+                    except (ValueError, TypeError):
+                        pass
         
         # We need to map scores to a unified scale [-1, 1] where 1 is strong BUY, -1 is strong SELL
         # Assume tech_score is 0 to 1 (0.5 is neutral)
@@ -65,10 +92,15 @@ class FusionAgent:
         
         tech_norm = (tech_score - 0.5) * 2   # maps [0, 1] to [-1, 1]
         event_norm = (event_score - 0.5) * 2
+        context_norm = max(-1.0, min(1.0, ((context_score - 0.5) * 2) + confidence_adjustment))
 
         # Risk always diminishes confidence in the direction of the trade
         # e.g., if we are bullish, high risk reduces the bull score
-        base_signal = (tech_norm * weights["technical"]) + (event_norm * weights["event"])
+        base_signal = (
+            (tech_norm * weights["technical"])
+            + (event_norm * weights["event"])
+            + (context_norm * weights["context"])
+        )
         
         # Apply risk penalty
         if base_signal > 0:
@@ -96,9 +128,9 @@ class FusionAgent:
 
         explanation = (
             f"Regime: {market_regime}. "
-            f"Tech Score: {tech_score:.2f}, Event Score: {event_score:.2f}, Risk Penalty: {risk_score:.2f}. "
+            f"Tech Score: {tech_score:.2f}, Event Score: {event_score:.2f}, Context Score: {context_score:.2f}, Risk Penalty: {risk_score:.2f}. "
             f"Final Signal: {final_signal:.3f}. "
-            f"Agent Reasons -> Tech: {tech_data.get('reason','')}; Event: {event_data.get('reason','')}; Risk: {risk_data.get('reason','')}"
+            f"Agent Reasons -> Tech: {tech_data.get('reason','')}; Event: {event_data.get('reason','')}; Context: {context_data.get('reason','')}; Risk: {risk_data.get('reason','')}"
         )
 
         return {

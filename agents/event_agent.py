@@ -1,5 +1,5 @@
 import os
-from typing import List
+from typing import Any, Dict, List
 from langchain_ollama import ChatOllama
 from langchain_core.prompts import PromptTemplate
 from data.schema import NewsData
@@ -27,20 +27,22 @@ Content: {content}
 
 class EventAgent:
     def __init__(self):
-        # Using Local Ollama
-        # We will use llama3 as the default, but you can change this to any installed model
+        # Using local Ollama; models are configurable by environment variables.
         ollama_base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+        default_model = os.getenv("OLLAMA_MODEL", "llama3.2:latest")
+        triage_model = os.getenv("EVENT_TRIAGE_MODEL", default_model)
+        extract_model = os.getenv("EVENT_EXTRACT_MODEL", default_model)
         
         # Fast model for Triage
         self.triage_llm = ChatOllama(
-            model="kimi-k2.5:cloud", 
+            model=triage_model,
             temperature=0.0,
             base_url=ollama_base_url
         )
         
         # Heavy model for deep extraction
         self.extract_llm = ChatOllama(
-            model="kimi-k2.5:cloud", 
+            model=extract_model,
             temperature=0.0,
             base_url=ollama_base_url
         )
@@ -48,13 +50,36 @@ class EventAgent:
         self.triage_prompt = PromptTemplate.from_template(TRIAGE_PROMPT)
         self.extract_prompt = PromptTemplate.from_template(DEEP_EXTRACT_PROMPT)
 
-    def analyze_news(self, news_list: List[NewsData]) -> str:
+    @staticmethod
+    def _parse_toon(toon: str) -> Dict[str, Any]:
+        data: Dict[str, Any] = {}
+        for line in toon.splitlines():
+            if ":" not in line:
+                continue
+            key, value = line.split(":", 1)
+            data[key.strip()] = value.strip()
+        return data
+
+    @staticmethod
+    def to_toon(payload: Dict[str, Any]) -> str:
+        return (
+            f"event_score: {payload.get('event_score', 0.0)}\n"
+            f"event_type: {payload.get('event_type', 'other')}\n"
+            f"impact: {payload.get('impact', 'neutral')}\n"
+            f"reason: {payload.get('reason', '')}\n"
+        )
+
+    def analyze(self, news_list: List[NewsData]) -> Dict[str, Any]:
         """
-        Analyzes a list of news articles. Triages them, and deep extracts High-impact ones.
-        Returns a TOON formatted string of events.
+        Analyzes a list of news articles and returns structured event data.
         """
         if not news_list:
-            return "event_score: 0.0\nevent_type: none\nimpact: neutral\nreason: no news available\n"
+            return {
+                "event_score": 0.0,
+                "event_type": "none",
+                "impact": "neutral",
+                "reason": "no news available",
+            }
 
         high_impact_news = []
         
@@ -71,7 +96,12 @@ class EventAgent:
                 high_impact_news.append(news)
                 
         if not high_impact_news:
-            return "event_score: 0.0\nevent_type: low_impact\nimpact: neutral\nreason: only low impact news detected\n"
+            return {
+                "event_score": 0.0,
+                "event_type": "low_impact",
+                "impact": "neutral",
+                "reason": "only low impact news detected",
+            }
 
         # 2. Deep Extract (just taking the most recent high impact news for the final score, or combining them)
         # For simplicity, we summarize the first high impact one to present the TOON output format.
@@ -81,16 +111,33 @@ class EventAgent:
         extract_chain = self.extract_prompt | self.extract_llm
         try:
             extraction_result = extract_chain.invoke({"title": top_news.title, "content": top_news.content}).content.strip()
-            
-            # Since the LLM returns the TOON payload directly, we just prepend the computed event_score based on impact
+            parsed = self._parse_toon(extraction_result)
+
+            # Since the LLM returns TOON, infer event score from impact.
             event_score = 0.5
-            if "bullish" in extraction_result.lower():
+            impact = str(parsed.get("impact", "neutral")).lower()
+            if impact == "bullish":
                 event_score = 0.8
-            elif "bearish" in extraction_result.lower():
+            elif impact == "bearish":
                 event_score = 0.2
-                
-            final_toon = f"event_score: {event_score:.2f}\n" + extraction_result
-            return final_toon
+
+            return {
+                "event_score": round(event_score, 2),
+                "event_type": parsed.get("event_type", "other"),
+                "impact": parsed.get("impact", "neutral"),
+                "reason": parsed.get("reason", "no reason provided"),
+            }
             
         except Exception as e:
-            return f"event_score: 0.0\nevent_type: error\nimpact: neutral\nreason: LLM extraction failed: {str(e)}\n"
+            return {
+                "event_score": 0.0,
+                "event_type": "error",
+                "impact": "neutral",
+                "reason": f"LLM extraction failed: {str(e)}",
+            }
+
+    def analyze_news(self, news_list: List[NewsData]) -> str:
+        """
+        Backward-compatible TOON output helper.
+        """
+        return self.to_toon(self.analyze(news_list))
