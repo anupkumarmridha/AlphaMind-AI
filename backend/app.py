@@ -76,9 +76,12 @@ def run_trade(request: TradeRunRequest):
 
     decision = result.get("decision_data", {})
     trade = result.get("trade_executed")
+    closed_trades = result.get("closed_trades", [])
 
     if trade:
         insert_trade(trade)
+    for closed in closed_trades:
+        insert_trade(closed)
 
     insert_decision(
         symbol=request.symbol,
@@ -94,6 +97,7 @@ def run_trade(request: TradeRunRequest):
         "market_regime": request.market_regime or "normal",
         "decision": decision,
         "trade": _serialize_trade(trade),
+        "closed_trades": [_serialize_trade(t) for t in closed_trades],
     }
 
 @app.get("/dashboard")

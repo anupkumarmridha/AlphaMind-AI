@@ -10,6 +10,7 @@ venv/
 # Local runtime artifacts
 *.log
 backend/alphamind.db
+backend/alphamind_learning.db
 *.sqlite
 *.sqlite3
 

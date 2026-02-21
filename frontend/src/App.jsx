@@ -13,7 +13,7 @@ import {
   Legend,
   Filler
 } from 'chart.js';
-import { Line, Bar, Doughnut, Radar } from 'react-chartjs-2';
+import { Line, Bar, Radar } from 'react-chartjs-2';
 import './index.css';
 
 ChartJS.register(
@@ -46,7 +46,11 @@ function App() {
     trades: [],
     logs: [],
     agentWeights: [],
-    learnings: []
+    learnings: [],
+    agentScoreboard: [],
+    liveSignals: [],
+    bulletin: null,
+    performanceDeepDive: []
   });
   const [shareStatus, setShareStatus] = useState(null);
   const [runtimeStatus, setRuntimeStatus] = useState(null);
@@ -54,6 +58,11 @@ function App() {
   const [runRegime, setRunRegime] = useState('normal');
   const [runningCycle, setRunningCycle] = useState(false);
   const [dataMode, setDataMode] = useState('live');
+
+  const scoreFromReason = useCallback((reason, label) => {
+    const match = new RegExp(`${label}:\\s*(-?\\d+(?:\\.\\d+)?)`, 'i').exec(String(reason || ''));
+    return match ? Number(match[1]) : null;
+  }, []);
 
   const buildMockData = useCallback(() => {
     const labels = Array.from({ length: 30 }, (_, i) => `Day ${i + 1}`);
@@ -111,6 +120,35 @@ function App() {
       trades: mockTrades,
       logs: mockLogs,
       agentWeights: mockAgentWeights,
+      agentScoreboard: [
+        { agent: 'Technical Agent', value: '65%', detail: 'Mock technical score baseline.' },
+        { agent: 'Event Agent', value: '58%', detail: 'Mock event score baseline.' },
+        { agent: 'Risk Agent', value: '1/5', detail: 'Mock veto ratio.' },
+        { agent: 'Fusion Agent', value: '4/5', detail: 'Mock closed-trade coverage.' },
+      ],
+      liveSignals: mockTrades.slice(0, 3).map((t) => ({
+        symbol: t.symbol,
+        action: t.action,
+        confidence: t.confidence,
+        target: t.target,
+        stopLoss: t.stopLoss,
+        reason: t.reason,
+        profit: t.profit,
+        holding: t.holding,
+      })),
+      bulletin: {
+        updatedLabel: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        regime: 'normal',
+        notes: ['Mock decision stream active.', 'Mock closed trades available.', 'Mock events available.'],
+      },
+      performanceDeepDive: [
+        { label: 'Profit Factor', value: '1.85' },
+        { label: 'Calmar Ratio', value: '4.14' },
+        { label: 'Win Streak', value: '3' },
+        { label: 'Avg Win', value: '+3.80%' },
+        { label: 'Avg Loss', value: '-1.50%' },
+        { label: 'Expected Value', value: '+1.90%' },
+      ],
       learnings: [
         { topic: 'Macro Environment', insight: 'VIX is suppressed (14.2). The Fusion Engine has reduced Risk Agent veto power by 15% to capitalize on the low-volatility bullish trend.' },
         { topic: 'Sector Rotation', insight: 'Semiconductor momentum is slowing. The Learning Engine has flagged NVDA and AMD for potential mean-reversion pullbacks in the next 48 hours.' },
@@ -188,6 +226,75 @@ function App() {
         })
       : [{ tech: 0.6, event: 0.2, risk: 0.2 }];
 
+    const closedTrades = trades.filter((t) => t.holding === 'Closed');
+    const avgTechScore = decisions.length
+      ? decisions
+          .map((d) => scoreFromReason(d.payload?.reason, 'Tech Score'))
+          .filter((v) => Number.isFinite(v))
+          .reduce((a, b, _, arr) => a + b / arr.length, 0)
+      : 0;
+    const avgEventScore = decisions.length
+      ? decisions
+          .map((d) => scoreFromReason(d.payload?.reason, 'Event Score'))
+          .filter((v) => Number.isFinite(v))
+          .reduce((a, b, _, arr) => a + b / arr.length, 0)
+      : 0;
+    const riskVetoes = decisions.filter((d) => String(d.payload?.reason || '').toLowerCase().includes('veto')).length;
+    const latestTs = decisions[0]?.timestamp || events[0]?.timestamp || null;
+
+    const agentScoreboard = [
+      {
+        agent: 'Technical Agent',
+        value: `${(avgTechScore * 100).toFixed(0)}%`,
+        detail: 'Average technical score seen by fusion.',
+      },
+      {
+        agent: 'Event Agent',
+        value: `${(avgEventScore * 100).toFixed(0)}%`,
+        detail: 'Average event score from news extraction.',
+      },
+      {
+        agent: 'Risk Agent',
+        value: `${riskVetoes}/${decisions.length || 0}`,
+        detail: 'Hard veto count over total decisions.',
+      },
+      {
+        agent: 'Fusion Agent',
+        value: `${closedTrades.length}/${trades.length || 0}`,
+        detail: 'Closed trades out of all tracked trades.',
+      },
+    ];
+
+    const liveSignals = trades.slice(0, 3).map((t) => ({
+      symbol: t.symbol,
+      action: t.action,
+      confidence: t.confidence,
+      target: t.target,
+      stopLoss: t.stopLoss,
+      reason: t.reason,
+      profit: t.profit,
+      holding: t.holding,
+    }));
+
+    const bulletin = {
+      updatedLabel: latestTs ? new Date(latestTs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A',
+      regime: decisions[0]?.market_regime || 'normal',
+      notes: [
+        `${decisions.length} decisions processed.`,
+        `${closedTrades.length} closed trades contribute to performance metrics.`,
+        `${events.length} analytics events captured.`,
+      ],
+    };
+
+    const performanceDeepDive = [
+      { label: 'Profit Factor', value: Number(metrics.profit_factor || 0).toFixed(2) },
+      { label: 'Calmar Ratio', value: Number(metrics.calmar_ratio || 0).toFixed(2) },
+      { label: 'Win Streak', value: `${Number(metrics.win_streak || 0)}` },
+      { label: 'Avg Win', value: `${(Number(metrics.avg_win || 0) * 100).toFixed(2)}%` },
+      { label: 'Avg Loss', value: `${(Number(metrics.avg_loss || 0) * 100).toFixed(2)}%` },
+      { label: 'Expected Value', value: `${(Number(metrics.expected_value || 0) * 100).toFixed(2)}%` },
+    ];
+
     return {
       labels,
       equityCurve,
@@ -196,18 +303,22 @@ function App() {
         profitFactor: Number(metrics.profit_factor || 0),
         totalReturn: Number((((equityCurve.at(-1) || 10000) - 10000) / 10000) * 100),
         maxDrawdown: Number(-((metrics.max_drawdown || 0) * 100)),
-        sharpeRatio: 0,
-        alpha: 0,
+        sharpeRatio: Number(metrics.sharpe_ratio || 0),
+        alpha: Number((metrics.alpha || 0) * 100),
       },
       trades,
       logs,
       agentWeights,
+      agentScoreboard,
+      liveSignals,
+      bulletin,
+      performanceDeepDive,
       learnings: [
         { topic: 'Live Feed', insight: `${events.length} analytics events recorded.` },
         { topic: 'Execution', insight: `${decisions.length} decisions processed through the API.` },
       ],
     };
-  }, []);
+  }, [scoreFromReason]);
 
   const loadDashboard = useCallback(async () => {
     const response = await fetch(`${API_BASE_URL}/dashboard`);
@@ -452,41 +563,6 @@ function App() {
     }
   };
 
-  const wins = data.trades.filter(t => t.profit > 0).length;
-  const losses = data.trades.filter(t => t.profit <= 0).length;
-
-  const DOUGHNUT_DATA = {
-    labels: ['Winning Trades', 'Losing Trades'],
-    datasets: [
-      {
-        data: [wins, losses],
-        backgroundColor: ['rgba(16, 185, 129, 0.8)', 'rgba(239, 68, 68, 0.8)'],
-        borderColor: ['rgba(16, 185, 129, 1)', 'rgba(239, 68, 68, 1)'],
-        borderWidth: 1,
-        hoverOffset: 4
-      }
-    ]
-  };
-
-  const DOUGHNUT_OPTIONS = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: 'bottom',
-        labels: { color: '#e2e8f0', padding: 20, font: { family: 'Inter', size: 11 } }
-      },
-      tooltip: {
-        backgroundColor: 'rgba(15, 23, 42, 0.9)',
-        titleColor: '#f8fafc',
-        bodyColor: '#94a3b8',
-        borderColor: 'rgba(255,255,255,0.1)',
-        borderWidth: 1,
-      }
-    },
-    cutout: '70%',
-  };
-
   const radarData = {
     labels: ['Trend Strength', 'Momentum', 'Event Sentiment', 'Volatility Risk', 'Macro Alignment'],
     datasets: [{
@@ -524,6 +600,11 @@ function App() {
       }
     }
   };
+
+  const closedTradesCount = data.trades.filter((t) => t.holding === 'Closed').length;
+  const openTradesCount = data.trades.filter((t) => t.holding === 'Open').length;
+  const latestSignal = data.liveSignals?.[0] || null;
+  const alphaLabel = data.metrics.alpha >= 0 ? `+${data.metrics.alpha.toFixed(1)}%` : `${data.metrics.alpha.toFixed(1)}%`;
 
   return (
     <div className="min-h-screen p-4 md:p-8 flex flex-col max-w-7xl mx-auto w-full">
@@ -635,36 +716,36 @@ function App() {
 
             <div className="glass-panel flex flex-col min-h-[300px]">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-sm font-semibold text-slate-50 uppercase tracking-wider">Risk Engine Heatmap</h2>
+                <h2 className="text-sm font-semibold text-slate-50 uppercase tracking-wider">Runtime Snapshot</h2>
               </div>
               <div className="flex-1 flex flex-col gap-3">
                 <div className="bg-slate-900/40 border border-slate-700/50 rounded-lg p-3 flex justify-between items-center">
                   <div className="flex flex-col">
-                    <span className="text-xs font-medium text-slate-400">Market Volatility (VIX)</span>
-                    <span className="text-[10px] text-slate-500">Dictates global risk vetoes</span>
+                    <span className="text-xs font-medium text-slate-400">Closed Trades</span>
+                    <span className="text-[10px] text-slate-500">Trades used in evaluation metrics</span>
                   </div>
-                  <span className="text-xs font-bold text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded">14.2 (LOW)</span>
+                  <span className="text-xs font-bold text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded">{closedTradesCount}</span>
                 </div>
                 <div className="bg-slate-900/40 border border-slate-700/50 rounded-lg p-3 flex justify-between items-center">
                   <div className="flex flex-col">
-                    <span className="text-xs font-medium text-slate-400">Portfolio Beta</span>
-                    <span className="text-[10px] text-slate-500">Sensitivity to market swings</span>
+                    <span className="text-xs font-medium text-slate-400">Open Trades</span>
+                    <span className="text-[10px] text-slate-500">Live exposure pending close conditions</span>
                   </div>
-                  <span className="text-xs font-bold text-slate-100 bg-slate-700/50 px-2 py-1 rounded">1.15 (NORMAL)</span>
+                  <span className="text-xs font-bold text-slate-100 bg-slate-700/50 px-2 py-1 rounded">{openTradesCount}</span>
                 </div>
                 <div className="bg-slate-900/40 border border-amber-500/30 rounded-lg p-3 flex justify-between items-center">
                   <div className="flex flex-col">
-                    <span className="text-xs font-medium text-slate-400">Sector Exposure (Tech)</span>
-                    <span className="text-[10px] text-slate-500">Concentration risk active</span>
+                    <span className="text-xs font-medium text-slate-400">Latest Signal</span>
+                    <span className="text-[10px] text-slate-500">Most recent action from dashboard feed</span>
                   </div>
-                  <span className="text-xs font-bold text-amber-500 bg-amber-500/10 px-2 py-1 rounded">68% (ELEVATED)</span>
+                  <span className="text-xs font-bold text-amber-500 bg-amber-500/10 px-2 py-1 rounded">{latestSignal ? latestSignal.action : 'N/A'}</span>
                 </div>
                 <div className="bg-slate-900/40 border border-slate-700/50 rounded-lg p-3 flex justify-between items-center">
                   <div className="flex flex-col">
-                    <span className="text-xs font-medium text-slate-400">Position Sizing</span>
-                    <span className="text-[10px] text-slate-500">Auto-adjusted algorithmically</span>
+                    <span className="text-xs font-medium text-slate-400">Latest Confidence</span>
+                    <span className="text-[10px] text-slate-500">From most recent fusion decision</span>
                   </div>
-                  <span className="text-xs font-bold text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded">Normal (5%)</span>
+                  <span className="text-xs font-bold text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded">{latestSignal ? `${(latestSignal.confidence * 100).toFixed(0)}%` : 'N/A'}</span>
                 </div>
               </div>
             </div>
@@ -692,29 +773,19 @@ function App() {
           <div className="glass-panel">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-5 gap-2">
               <div>
-                <h2 className="text-base font-semibold text-slate-50">Agent Accuracy Scoreboard</h2>
-                <p className="text-[10px] text-slate-500 mt-0.5">How often each agent's signal matched the profitable outcome</p>
+                <h2 className="text-base font-semibold text-slate-50">Agent Runtime Scoreboard</h2>
+                <p className="text-[10px] text-slate-500 mt-0.5">Live coverage and contribution metrics from persisted runs</p>
               </div>
-              <span className="text-xs text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2 py-1 rounded-full">Based on 5 trades</span>
+              <span className="text-xs text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2 py-1 rounded-full">Data-backed</span>
             </div>
             <div className="flex flex-col gap-4">
-              {[
-                { agent: '⚙️ Technical Agent', acc: 80, trades: 4, role: 'Reads RSI, EMA, MACD & price action', color: 'bg-blue-500' },
-                { agent: '📰 Event Agent', acc: 75, trades: 4, role: 'Scores news sentiment & macro events', color: 'bg-purple-500' },
-                { agent: '🛡️ Risk Agent', acc: 100, trades: 2, role: 'Vetoes trades when risk thresholds are breached', color: 'bg-amber-500' },
-                { agent: '🧠 Fusion Agent', acc: 80, trades: 5, role: 'Synthesizes all agent signals into a final decision', color: 'bg-emerald-500' },
-              ].map((a) => (
-                <div key={a.agent} className="flex flex-col gap-2">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <span className="text-xs font-semibold text-slate-200">{a.agent}</span>
-                      <p className="text-[10px] text-slate-500">{a.role}</p>
-                    </div>
-                    <span className="text-xs font-bold text-slate-100 font-mono">{a.acc}%</span>
+              {data.agentScoreboard?.map((item) => (
+                <div key={item.agent} className="flex justify-between items-start bg-slate-900/40 border border-slate-800 rounded-lg p-3">
+                  <div>
+                    <span className="text-xs font-semibold text-slate-200">{item.agent}</span>
+                    <p className="text-[10px] text-slate-500">{item.detail}</p>
                   </div>
-                  <div className="w-full bg-slate-800 rounded-full h-2">
-                    <div className={`${a.color} h-2 rounded-full transition-all duration-700`} style={{ width: `${a.acc}%` }}></div>
-                  </div>
+                  <span className="text-xs font-bold text-slate-100 font-mono">{item.value}</span>
                 </div>
               ))}
             </div>
@@ -725,112 +796,49 @@ function App() {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-5 gap-2">
               <div>
                 <h2 className="text-base font-semibold text-slate-50">Live Technical Signals</h2>
-                <p className="text-[10px] text-slate-500 mt-0.5">Real-time indicator readings the Technical Agent is processing, with targets and prediction accuracy</p>
+                <p className="text-[10px] text-slate-500 mt-0.5">Latest signals derived from persisted trade + decision outputs</p>
               </div>
               <span className="flex items-center gap-1.5 text-xs text-emerald-400">
                 <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>Live
               </span>
             </div>
             <div className="grid grid-cols-1 gap-4">
-              {[
-                {
-                  sym: 'NVDA', price: 120.45, overall: 'BUY', overallColor: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
-                  holding: '1-3 Days (Swing)', target: 128.50, stopLoss: 116.00,
-                  predictedHits: 7, actualHits: 6, totalSignals: 8,
-                  explanation: 'EMA cross confirmed bullish momentum. RSI near neutral suggests room to run. MACD histogram positive.',
-                  indicators: [
-                    { name: 'RSI(14)', value: '58', label: 'Neutral', color: 'text-slate-300', desc: 'Momentum oscillator. Below 70 = not overbought, room to move up.' },
-                    { name: 'MACD', value: 'Bullish Cross', label: '', color: 'text-emerald-400', desc: 'Signal line crossed above zero — short-term trend flipping bullish.' },
-                    { name: 'EMA Status', value: 'Above 21 EMA ✓', label: '', color: 'text-emerald-400', desc: 'Price is above its 21-day average — the AI considers this a buy zone.' },
-                    { name: 'Bollinger', value: 'Inside Bands', label: '', color: 'text-slate-300', desc: 'Price is within normal volatility range — no extreme stretch risk.' },
-                  ]
-                },
-                {
-                  sym: 'AAPL', price: 185.20, overall: 'SELL', overallColor: 'text-red-400 bg-red-400/10 border-red-400/20',
-                  holding: '1 Day (Intraday)', target: 178.00, stopLoss: 188.50,
-                  predictedHits: 5, actualHits: 3, totalSignals: 6,
-                  explanation: 'RSI at 78 is overbought — historically the AI has seen mean reversion here. MACD diverging bearishly. Near upper Bollinger Band.',
-                  indicators: [
-                    { name: 'RSI(14)', value: '78', label: 'Overbought', color: 'text-red-400', desc: 'Reading above 70 = overbought. The AI sells into strength expecting a pullback.' },
-                    { name: 'MACD', value: 'Bearish Diverge', label: '', color: 'text-red-400', desc: 'Histogram shrinking while price rises — momentum divergence signals reversal risk.' },
-                    { name: 'EMA Status', value: 'Below 9 EMA ✗', label: '', color: 'text-red-400', desc: 'Price fell beneath the fast 9-day average — early bearish warning.' },
-                    { name: 'Bollinger', value: 'Upper Band Hit', label: '', color: 'text-amber-400', desc: 'Price touched the upper band — statistically likely to revert toward the mean.' },
-                  ]
-                },
-                {
-                  sym: 'TSLA', price: 195.10, overall: 'BUY', overallColor: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
-                  holding: '2-5 Days (Swing)', target: 212.00, stopLoss: 188.00,
-                  predictedHits: 9, actualHits: 8, totalSignals: 11,
-                  explanation: 'Breakout above key resistance confirmed by expanding Bollinger Bands. MACD bullish. Higher risk due to elevated volatility — position size reduced by Risk Agent.',
-                  indicators: [
-                    { name: 'RSI(14)', value: '62', label: 'Mild Momentum', color: 'text-amber-400', desc: 'Between 50-70 = momentum building but not extreme. AI treats this as a healthy entry zone.' },
-                    { name: 'MACD', value: 'Bullish Cross', label: '', color: 'text-emerald-400', desc: 'Signal line crossed above — short-term bullish bias confirmed.' },
-                    { name: 'EMA Status', value: 'Above 21 EMA ✓', label: '', color: 'text-emerald-400', desc: 'Holding above 21-day average post-breakout — trend is intact.' },
-                    { name: 'Bollinger', value: 'Expanding', label: '', color: 'text-amber-400', desc: 'Bands widening = volatility increasing. Good for momentum trades but raises stop-out risk.' },
-                  ]
-                },
-              ].map((s) => {
-                const hitPct = Math.round((s.actualHits / s.totalSignals) * 100);
-                return (
-                  <div key={s.sym} className="bg-slate-900/60 border border-slate-800 rounded-xl p-4 flex flex-col gap-4">
-                    {/* Header */}
-                    <div className="flex flex-wrap justify-between items-center gap-2">
-                      <div className="flex items-center gap-3">
-                        <span className="font-bold text-slate-100 text-sm">{s.sym}</span>
-                        <span className="text-xs text-slate-400 font-mono">${s.price}</span>
-                      </div>
-                      <span className={`text-xs font-bold px-2.5 py-1 rounded border ${s.overallColor}`}>Signal: {s.overall}</span>
+              {(data.liveSignals?.length ? data.liveSignals : []).map((s) => (
+                <div key={`${s.symbol}-${s.action}`} className="bg-slate-900/60 border border-slate-800 rounded-xl p-4 flex flex-col gap-3">
+                  <div className="flex flex-wrap justify-between items-center gap-2">
+                    <div className="flex items-center gap-3">
+                      <span className="font-bold text-slate-100 text-sm">{s.symbol}</span>
+                      <span className="text-xs text-slate-400">{s.holding}</span>
                     </div>
-
-                    {/* AI Explanation */}
-                    <p className="text-[10px] text-slate-400 leading-relaxed bg-slate-950/40 rounded-lg px-3 py-2 border border-slate-800/50 italic">{s.explanation}</p>
-
-                    {/* Indicators with explanations */}
-                    <div className="grid grid-cols-1 gap-2">
-                      {s.indicators.map((ind) => (
-                        <div key={ind.name} className="flex flex-col gap-0.5">
-                          <div className="flex justify-between items-center">
-                            <span className="text-[10px] font-semibold text-slate-400">{ind.name}</span>
-                            <span className={`text-[10px] font-mono font-bold ${ind.color}`}>{ind.value}{ind.label ? ` (${ind.label})` : ''}</span>
-                          </div>
-                          <p className="text-[9px] text-slate-600 leading-tight">{ind.desc}</p>
-                        </div>
-                      ))}
+                    <span className={`text-xs font-bold px-2.5 py-1 rounded border ${s.action === 'BUY' ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' : s.action === 'SELL' ? 'text-red-400 bg-red-400/10 border-red-400/20' : 'text-slate-300 bg-slate-700/40 border-slate-600'}`}>
+                      Signal: {s.action}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 leading-relaxed bg-slate-950/40 rounded-lg px-3 py-2 border border-slate-800/50 italic">
+                    {s.reason}
+                  </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="bg-slate-800/50 rounded-lg p-2 flex flex-col gap-0.5">
+                      <span className="text-[9px] text-slate-500 uppercase tracking-wide">Confidence</span>
+                      <span className="text-xs font-semibold text-slate-200">{(s.confidence * 100).toFixed(0)}%</span>
                     </div>
-
-                    {/* Trade Plan */}
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="bg-slate-800/50 rounded-lg p-2 flex flex-col gap-0.5">
-                        <span className="text-[9px] text-slate-500 uppercase tracking-wide">Hold Period</span>
-                        <span className="text-xs font-semibold text-slate-200">{s.holding}</span>
-                      </div>
-                      <div className="bg-emerald-900/20 border border-emerald-800/30 rounded-lg p-2 flex flex-col gap-0.5">
-                        <span className="text-[9px] text-emerald-500 uppercase tracking-wide">Target</span>
-                        <span className="text-xs font-bold text-emerald-400 font-mono">${s.target}</span>
-                      </div>
-                      <div className="bg-red-900/20 border border-red-800/30 rounded-lg p-2 flex flex-col gap-0.5">
-                        <span className="text-[9px] text-red-500 uppercase tracking-wide">Stop Loss</span>
-                        <span className="text-xs font-bold text-red-400 font-mono">${s.stopLoss}</span>
-                      </div>
+                    <div className="bg-emerald-900/20 border border-emerald-800/30 rounded-lg p-2 flex flex-col gap-0.5">
+                      <span className="text-[9px] text-emerald-500 uppercase tracking-wide">Target</span>
+                      <span className="text-xs font-bold text-emerald-400 font-mono">${Number(s.target || 0).toFixed(2)}</span>
                     </div>
-
-                    {/* Prediction Accuracy */}
-                    <div className="flex flex-col gap-1.5">
-                      <div className="flex justify-between items-center">
-                        <span className="text-[9px] text-slate-500 uppercase tracking-wide">Signal Prediction Accuracy</span>
-                        <span className="text-[10px] font-bold text-slate-200">{s.actualHits}/{s.totalSignals} hit ({hitPct}%)</span>
-                      </div>
-                      <div className="w-full bg-slate-800 rounded-full h-1.5">
-                        <div
-                          className={`h-1.5 rounded-full ${hitPct >= 75 ? 'bg-emerald-500' : hitPct >= 50 ? 'bg-amber-400' : 'bg-red-500'}`}
-                          style={{ width: `${hitPct}%` }}
-                        ></div>
-                      </div>
-                      <p className="text-[9px] text-slate-600">How often this symbol's predicted signal direction matched the actual outcome across all historical trades.</p>
+                    <div className="bg-red-900/20 border border-red-800/30 rounded-lg p-2 flex flex-col gap-0.5">
+                      <span className="text-[9px] text-red-500 uppercase tracking-wide">Stop Loss</span>
+                      <span className="text-xs font-bold text-red-400 font-mono">${Number(s.stopLoss || 0).toFixed(2)}</span>
                     </div>
                   </div>
-                );
-              })}
+                  <div className="text-[10px] text-slate-500">
+                    Last outcome: <span className={s.profit >= 0 ? 'text-emerald-400' : 'text-red-400'}>{s.profit >= 0 ? '+' : ''}{s.profit.toFixed(2)}%</span>
+                  </div>
+                </div>
+              ))}
+              {!data.liveSignals?.length && (
+                <div className="text-xs text-slate-500">No live signals yet. Run a cycle to populate this section.</div>
+              )}
             </div>
           </div>
 
@@ -842,30 +850,38 @@ function App() {
                 <h2 className="text-base font-semibold text-slate-50">Market Conditions Bulletin</h2>
                 <p className="text-[10px] text-slate-500 mt-0.5">Fusion Agent's real-time macro assessment</p>
               </div>
-              <span className="text-[10px] text-slate-500">Updated: 3:15 PM</span>
+              <span className="text-[10px] text-slate-500">Updated: {data.bulletin?.updatedLabel || 'N/A'}</span>
             </div>
             <div className="flex flex-col gap-3">
               <div className="flex gap-3 items-center">
-                <span className="text-xl">📈</span>
+                <span className="text-xl">R</span>
                 <div>
-                  <span className="text-xs font-bold text-emerald-400">Regime: RISK-ON / TRENDING</span>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Broad market is in a low-volatility uptrend. VIX below 20 signals institutional confidence. The Risk Agent's veto power is reduced.</p>
+                  <span className="text-xs font-bold text-emerald-400">Regime: {String(data.bulletin?.regime || 'normal').toUpperCase()}</span>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Regime is inferred from latest persisted fusion decision metadata.</p>
                 </div>
               </div>
               <div className="h-px bg-slate-800"></div>
               <div className="flex gap-3 items-center">
-                <span className="text-xl">🏭</span>
+                <span className="text-xl">1</span>
                 <div>
-                  <span className="text-xs font-bold text-amber-400">Sector Watch: Semiconductors Cooling</span>
-                  <p className="text-[10px] text-slate-400 mt-0.5">AI/chip momentum is decelerating after a strong Q1 run. NVDA and AMD showing early reversal signals. Reducing new entries in this sub-sector.</p>
+                  <span className="text-xs font-bold text-amber-400">Pipeline Throughput</span>
+                  <p className="text-[10px] text-slate-400 mt-0.5">{data.bulletin?.notes?.[0] || 'No decision data yet.'}</p>
                 </div>
               </div>
               <div className="h-px bg-slate-800"></div>
               <div className="flex gap-3 items-center">
-                <span className="text-xl">📰</span>
+                <span className="text-xl">2</span>
                 <div>
-                  <span className="text-xs font-bold text-blue-400">Event Radar: Supply Chain & Fed Minutes</span>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Supply chain disruption headlines are pressuring consumer tech. Fed minutes due Thursday — Event Agent is reducing exposure ahead of potential rate commentary to avoid event-driven whipsaws.</p>
+                  <span className="text-xs font-bold text-blue-400">Evaluation Coverage</span>
+                  <p className="text-[10px] text-slate-400 mt-0.5">{data.bulletin?.notes?.[1] || 'No closed trades yet.'}</p>
+                </div>
+              </div>
+              <div className="h-px bg-slate-800"></div>
+              <div className="flex gap-3 items-center">
+                <span className="text-xl">3</span>
+                <div>
+                  <span className="text-xs font-bold text-cyan-400">Event Stream</span>
+                  <p className="text-[10px] text-slate-400 mt-0.5">{data.bulletin?.notes?.[2] || 'No events captured yet.'}</p>
                 </div>
               </div>
             </div>
@@ -904,7 +920,7 @@ function App() {
               <div className="bg-slate-900/40 p-4 rounded-xl border border-white/5 flex flex-col gap-1">
                 <span className="text-sm font-medium text-slate-400">Alpha</span>
                 <span className="text-[10px] text-slate-500">Outperformance vs. S&P 500 benchmark</span>
-                <span className="text-2xl font-bold text-emerald-500">+{data.metrics.alpha.toFixed(1)}%</span>
+                <span className={`text-2xl font-bold ${data.metrics.alpha >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>{alphaLabel}</span>
               </div>
               <div className="bg-slate-900/40 p-4 rounded-xl border border-white/5 flex flex-col gap-1 col-span-2">
                 <span className="text-sm font-medium text-slate-400">Max Drawdown</span>
@@ -920,18 +936,11 @@ function App() {
               <span className="text-xs text-slate-500">Computed from all executed trades</span>
             </div>
             <div className="grid grid-cols-3 gap-3">
-              {[
-                { label: 'Profit Factor', sub: 'Avg Win ÷ Avg Loss. >1.5 is strong', value: '1.85', color: 'text-emerald-400' },
-                { label: 'Calmar Ratio', sub: 'Return / Drawdown. Higher = safer', value: '4.14', color: 'text-accent-cyan' },
-                { label: 'Win Streak', sub: 'Current consecutive profitable trades', value: '3 🔥', color: 'text-amber-400' },
-                { label: 'Avg Win', sub: 'Mean profit on winning trades', value: '+3.8%', color: 'text-emerald-400' },
-                { label: 'Avg Loss', sub: 'Mean loss on losing trades', value: '-1.5%', color: 'text-red-400' },
-                { label: 'Expected Value', sub: 'WinRate×AvgWin − LossRate×AvgLoss', value: '+1.9%', color: 'text-accent-cyan' },
-              ].map((stat) => (
+              {(data.performanceDeepDive || []).map((stat) => (
                 <div key={stat.label} className="bg-slate-900/60 border border-slate-800 rounded-xl p-3 flex flex-col gap-1">
                   <span className="text-xs font-semibold text-slate-300">{stat.label}</span>
-                  <span className="text-[10px] text-slate-500 leading-tight">{stat.sub}</span>
-                  <span className={`text-xl font-bold mt-1 font-mono ${stat.color}`}>{stat.value}</span>
+                  <span className="text-[10px] text-slate-500 leading-tight">Calculated from closed trades and sequential returns.</span>
+                  <span className="text-xl font-bold mt-1 font-mono text-accent-cyan">{stat.value}</span>
                 </div>
               ))}
             </div>
