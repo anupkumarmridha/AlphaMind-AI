@@ -31,6 +31,7 @@ ChartJS.register(
 );
 
 function App() {
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
   const [data, setData] = useState({
     equityCurve: [],
     labels: [],
@@ -46,6 +47,7 @@ function App() {
     logs: [],
     agentWeights: []
   });
+  const [shareStatus, setShareStatus] = useState(null);
 
   useEffect(() => {
     // Generate mock data representing the AlphaMind AI paper trading backend
@@ -112,6 +114,59 @@ function App() {
       ]
     });
   }, []);
+
+  const trackEvent = async (name, payload = {}) => {
+    const event = { name, payload, timestamp: new Date().toISOString() };
+    console.log('[analytics]', event);
+    try {
+      await fetch(`${API_BASE_URL}/events`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(event),
+      });
+    } catch (error) {
+      // Swallow errors to avoid blocking UI on analytics.
+    }
+  };
+
+  const buildShareText = () => {
+    const topTrade = [...data.trades].sort((a, b) => b.profit - a.profit)[0];
+    const totalReturn = data.metrics.totalReturn >= 0 ? `+${data.metrics.totalReturn.toFixed(2)}%` : `${data.metrics.totalReturn.toFixed(2)}%`;
+    const winRate = `${data.metrics.winRate.toFixed(1)}%`;
+    const sharpe = data.metrics.sharpeRatio.toFixed(2);
+    const topTradeText = topTrade ? `Top trade: ${topTrade.symbol} ${topTrade.profit > 0 ? '+' : ''}${topTrade.profit}%` : 'Top trade: N/A';
+    return `AlphaMind AI snapshot — Total Return ${totalReturn}, Win Rate ${winRate}, Sharpe ${sharpe}. ${topTradeText}`;
+  };
+
+  const handleShareClick = async () => {
+    const shareText = buildShareText();
+    const shareUrl = window.location.href;
+    setShareStatus(null);
+    trackEvent('share_clicked', { surface: 'header_cta' });
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'AlphaMind AI Performance Snapshot',
+          text: shareText,
+          url: shareUrl,
+        });
+        setShareStatus({ type: 'success', message: 'Snapshot shared.' });
+        trackEvent('share_completed', { method: 'web_share' });
+        return;
+      } catch (error) {
+        // Fall back to clipboard if share is cancelled or unsupported.
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(`${shareText} ${shareUrl}`);
+      setShareStatus({ type: 'success', message: 'Snapshot copied to clipboard.' });
+      trackEvent('share_completed', { method: 'clipboard' });
+    } catch (error) {
+      setShareStatus({ type: 'error', message: 'Unable to share right now.' });
+    }
+  };
 
   const chartData = {
     labels: data.labels,
@@ -339,6 +394,16 @@ function App() {
           <p className="text-slate-400 mt-1 text-sm">Autonomous Multi-Agent Trading Intelligence</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={handleShareClick}
+            className="flex items-center gap-2 px-4 py-2 rounded-full bg-accent-cyan/20 border border-accent-cyan/40 text-xs font-semibold text-accent-cyan hover:bg-accent-cyan/30 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11l5-5 5 5M12 6v12m7 0H5" />
+            </svg>
+            Share Snapshot
+          </button>
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/60 border border-slate-700 text-xs font-medium text-slate-300">
             <svg className="w-4 h-4 text-accent-indigo" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -351,6 +416,11 @@ function App() {
           </div>
         </div>
       </header>
+      {shareStatus && (
+        <div className={`mb-6 px-4 py-2 rounded-lg border text-xs font-medium ${shareStatus.type === 'success' ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-300' : 'border-red-400/40 bg-red-400/10 text-red-300'}`}>
+          {shareStatus.message}
+        </div>
+      )}
 
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 flex flex-col gap-6">
