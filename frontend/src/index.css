@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-dark-panel backdrop-blur-md border border-dark-border rounded-2xl p-6 shadow-lg shadow-black/10 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/20;
+  }
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: theme('colors.dark.bg');
+  color: theme('colors.slate.50');
+  background-image: theme('backgroundImage.glow');
+  background-size: cover;
+  background-attachment: fixed;
+  min-height: 100vh;
+}
