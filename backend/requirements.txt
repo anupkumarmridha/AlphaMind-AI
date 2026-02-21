@@ -1,0 +1,9 @@
+fastapi==0.129.0
+uvicorn==0.41.0
+pandas==2.2.3
+yfinance==0.2.54
+langgraph==0.2.62
+langchain-core==0.3.40
+langchain-ollama==0.2.2
+sqlalchemy==2.0.37
+pgvector==0.3.6

@@ -1,16 +1,19 @@
 import pandas as pd
-from typing import List
+from typing import Any, Dict, List
 from data.schema import PriceData
 
 class RiskAgent:
     @staticmethod
-    def analyze_risk(price_history: List[PriceData]) -> str:
+    def analyze(price_history: List[PriceData]) -> Dict[str, Any]:
         """
-        Calculates risk conditions.
-        Outputs TOON format and checks for hard risk veto.
+        Calculates risk conditions as structured data.
         """
         if len(price_history) < 14:
-            return "risk_score: 0.0\nrisk_level: low\nreason: insufficient data for risk analysis\n"
+            return {
+                "risk_score": 0.0,
+                "risk_level": "LOW",
+                "reason": "insufficient data for risk analysis",
+            }
 
         df = pd.DataFrame([p.model_dump() for p in price_history])
         df.set_index('timestamp', inplace=True)
@@ -37,7 +40,11 @@ class RiskAgent:
         vol = latest['Volatility_14']
         
         if pd.isna(rsi) or pd.isna(vol):
-             return "risk_score: 0.0\nrisk_level: low\nreason: not enough data to compute indicators\n"
+             return {
+                 "risk_score": 0.0,
+                 "risk_level": "LOW",
+                 "reason": "not enough data to compute indicators",
+             }
 
         # Extreme RSI checks
         if rsi > 80:
@@ -74,9 +81,23 @@ class RiskAgent:
         elif risk_score >= 0.3:
             risk_level = "MEDIUM"
 
-        # Output in TOON format
-        result = f"""risk_score: {risk_score:.2f}
-risk_level: {risk_level}
-reason: {', '.join(reasons) if reasons else 'Normal conditions'}
-"""
-        return result
+        return {
+            "risk_score": round(risk_score, 2),
+            "risk_level": risk_level,
+            "reason": ", ".join(reasons) if reasons else "Normal conditions",
+        }
+
+    @staticmethod
+    def to_toon(payload: Dict[str, Any]) -> str:
+        return (
+            f"risk_score: {payload.get('risk_score', 0.0)}\n"
+            f"risk_level: {payload.get('risk_level', 'LOW')}\n"
+            f"reason: {payload.get('reason', '')}\n"
+        )
+
+    @staticmethod
+    def analyze_risk(price_history: List[PriceData]) -> str:
+        """
+        Backward-compatible TOON output helper.
+        """
+        return RiskAgent.to_toon(RiskAgent.analyze(price_history))

@@ -22,9 +22,9 @@ class TradingState(TypedDict):
     price_history: List[PriceData]
     news_list: List[NewsData]
     
-    technical_toon: str
-    event_toon: str
-    risk_toon: str
+    technical_data: Dict[str, Any]
+    event_data: Dict[str, Any]
+    risk_data: Dict[str, Any]
     
     decision_data: Dict[str, Any]
     trade_executed: Any # the Trade model object or None
@@ -38,25 +38,25 @@ def fetch_market_data(state: TradingState):
 
 def run_technical_agent(state: TradingState):
     print(f"[{state['symbol']}] Running Technical Agent...")
-    toon = TechnicalAgent.calculate_technical_score(state["price_history"])
-    return {"technical_toon": toon}
+    data = TechnicalAgent.analyze(state["price_history"])
+    return {"technical_data": data}
 
 def run_event_agent(state: TradingState):
     print(f"[{state['symbol']}] Running Event Agent...")
-    toon = event_agent.analyze_news(state["news_list"])
-    return {"event_toon": toon}
+    data = event_agent.analyze(state["news_list"])
+    return {"event_data": data}
 
 def run_risk_agent(state: TradingState):
     print(f"[{state['symbol']}] Running Risk Agent...")
-    toon = RiskAgent.analyze_risk(state["price_history"])
-    return {"risk_toon": toon}
+    data = RiskAgent.analyze(state["price_history"])
+    return {"risk_data": data}
 
 def run_fusion_agent(state: TradingState):
     print(f"[{state['symbol']}] Running Fusion Engine...")
     decision = FusionAgent.synthesize(
-        state["technical_toon"], 
-        state["event_toon"], 
-        state["risk_toon"], 
+        state["technical_data"], 
+        state["event_data"], 
+        state["risk_data"], 
         state.get("market_regime", "normal")
     )
     return {"decision_data": decision}

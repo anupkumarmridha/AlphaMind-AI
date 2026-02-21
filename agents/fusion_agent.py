@@ -1,5 +1,4 @@
-import re
-from typing import Dict, Any
+from typing import Any, Dict, Union
 
 class FusionAgent:
     @staticmethod
@@ -13,14 +12,27 @@ class FusionAgent:
         return data
 
     @staticmethod
-    def synthesize(technical_toon: str, event_toon: str, risk_toon: str, market_regime: str = "normal") -> Dict[str, Any]:
+    def _as_dict(payload: Union[str, Dict[str, Any]]) -> Dict[str, Any]:
+        if isinstance(payload, dict):
+            return payload
+        if isinstance(payload, str):
+            return FusionAgent._parse_toon(payload)
+        return {}
+
+    @staticmethod
+    def synthesize(
+        technical: Union[str, Dict[str, Any]],
+        event: Union[str, Dict[str, Any]],
+        risk: Union[str, Dict[str, Any]],
+        market_regime: str = "normal",
+    ) -> Dict[str, Any]:
         """
         Fuses signals using Regime-Dependent Weights.
         Returns the final trade decision, confidence, and position size.
         """
-        tech_data = FusionAgent._parse_toon(technical_toon)
-        event_data = FusionAgent._parse_toon(event_toon)
-        risk_data = FusionAgent._parse_toon(risk_toon)
+        tech_data = FusionAgent._as_dict(technical)
+        event_data = FusionAgent._as_dict(event)
+        risk_data = FusionAgent._as_dict(risk)
 
         try:
             tech_score = float(tech_data.get('technical_score', 0))

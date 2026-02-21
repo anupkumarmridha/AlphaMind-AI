@@ -1,23 +1,34 @@
-import os
-from sqlalchemy import create_engine, Column, Integer, String, Float, Text
-from sqlalchemy.orm import declarative_base, sessionmaker
-from pgvector.sqlalchemy import Vector
 import json
+import os
+from sqlalchemy import create_engine, Column, Integer, String, Float, Text, text
+from sqlalchemy.orm import declarative_base, sessionmaker
 from models.trade import Trade
 
 Base = declarative_base()
 
-class TradePattern(Base):
-    __tablename__ = 'trade_patterns'
-    id = Column(Integer, primary_key=True)
-    symbol = Column(String(50))
-    action = Column(String(10))
-    reason_toon = Column(Text)
-    market_regime = Column(String(50))
-    win_rate = Column(Float, default=0.0)
-    total_trades_in_pattern = Column(Integer, default=1)
-    # Using 1536 dimensions for standard OpenAI text-embedding-ada-002
-    embedding = Column(Vector(1536))
+def _is_postgres(db_url: str) -> bool:
+    return "postgresql" in db_url
+
+def _embedding_column(db_url: str):
+    if _is_postgres(db_url):
+        from pgvector.sqlalchemy import Vector
+        # Using 1536 dimensions for standard OpenAI text-embedding-ada-002
+        return Column(Vector(1536))
+    # SQLite fallback stores embeddings as JSON text for MVP
+    return Column(Text)
+
+def _build_trade_pattern_model(db_url: str):
+    class TradePattern(Base):
+        __tablename__ = 'trade_patterns'
+        id = Column(Integer, primary_key=True)
+        symbol = Column(String(50))
+        action = Column(String(10))
+        reason_toon = Column(Text)
+        market_regime = Column(String(50))
+        win_rate = Column(Float, default=0.0)
+        total_trades_in_pattern = Column(Integer, default=1)
+        embedding = _embedding_column(db_url)
+    return TradePattern
 
 class LearningAgent:
     def __init__(self, db_url: str = None):
@@ -25,8 +36,11 @@ class LearningAgent:
             db_url = os.getenv("DATABASE_URL", "sqlite:///:memory:") # Note: sqlite won't support pgvector natively without extensions, this is a fallback for mocking
             
         self.engine = create_engine(db_url)
+        self.db_url = db_url
+        self.TradePattern = _build_trade_pattern_model(db_url)
+
         # In a real app, only create tables if they don't exist, and ensure pgvector extension is created
-        if "postgresql" in db_url:
+        if _is_postgres(db_url):
             with self.engine.connect() as conn:
                 conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
                 conn.commit()
@@ -52,15 +66,15 @@ class LearningAgent:
             # Here we would do a vector similarity search to find similar past patterns
             # e.g. db.query(TradePattern).order_by(TradePattern.embedding.l2_distance(embedding)).limit(1).first()
             # For brevity in MVP, we just create a new record.
-            
-            pattern = TradePattern(
+
+            pattern = self.TradePattern(
                 symbol=trade.symbol,
                 action=trade.action,
                 reason_toon=reason_toon,
                 market_regime=market_regime,
                 win_rate=1.0 if is_win else 0.0,
                 total_trades_in_pattern=1,
-                embedding=embedding
+                embedding=embedding if _is_postgres(self.db_url) else json.dumps(embedding)
             )
             db.add(pattern)
             db.commit()
