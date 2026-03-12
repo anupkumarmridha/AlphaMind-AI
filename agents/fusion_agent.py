@@ -36,6 +36,12 @@ class FusionAgent:
             risk_score = float(risk_data.get('risk_score', 0))
         except ValueError:
             risk_score = 0
+        
+        # Parse confidence_score from event_toon (new field from Task 3.4)
+        try:
+            event_confidence = float(event_data.get('confidence_score', 1.0))
+        except ValueError:
+            event_confidence = 1.0  # Default to full confidence if not present or invalid
 
         risk_level = risk_data.get('risk_level', 'LOW').upper()
 
@@ -50,14 +56,23 @@ class FusionAgent:
 
         # Dynamic Regime-Dependent Weights
         if market_regime == "earnings":
-            weights = {"technical": 0.3, "event": 0.6, "context": 0.1, "risk": 0.4}
+            base_event_weight = 0.6
+            weights = {"technical": 0.3, "event": base_event_weight, "context": 0.1, "risk": 0.4}
         elif market_regime == "volatile":
-            weights = {"technical": 0.4, "event": 0.2, "context": 0.1, "risk": 0.6}
+            base_event_weight = 0.2
+            weights = {"technical": 0.4, "event": base_event_weight, "context": 0.1, "risk": 0.6}
         else: # normal
-            weights = {"technical": 0.5, "event": 0.2, "context": 0.1, "risk": 0.3}
+            base_event_weight = 0.2
+            weights = {"technical": 0.5, "event": base_event_weight, "context": 0.1, "risk": 0.3}
 
         # For MVP we don't have context agent yet, we'll allocate its weight to technical
         weights["technical"] += weights.get("context", 0)
+        
+        # Apply confidence-aware weighting to event signal
+        # effective_event_weight = base_event_weight * confidence_score
+        # If confidence is low (<0.5), reduce the event signal's influence
+        effective_event_weight = weights["event"] * event_confidence
+        weights["event"] = effective_event_weight
         
         # We need to map scores to a unified scale [-1, 1] where 1 is strong BUY, -1 is strong SELL
         # Assume tech_score is 0 to 1 (0.5 is neutral)
@@ -96,7 +111,7 @@ class FusionAgent:
 
         explanation = (
             f"Regime: {market_regime}. "
-            f"Tech Score: {tech_score:.2f}, Event Score: {event_score:.2f}, Risk Penalty: {risk_score:.2f}. "
+            f"Tech Score: {tech_score:.2f}, Event Score: {event_score:.2f}, Event confidence: {event_confidence:.2f}, Risk Penalty: {risk_score:.2f}. "
             f"Final Signal: {final_signal:.3f}. "
             f"Agent Reasons -> Tech: {tech_data.get('reason','')}; Event: {event_data.get('reason','')}; Risk: {risk_data.get('reason','')}"
         )

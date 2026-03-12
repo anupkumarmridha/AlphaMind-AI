@@ -1,0 +1,165 @@
+# Implementation Plan
+
+- [x] 1. Write bug condition exploration test
+  - **Property 1: Bug Condition** - Inaccurate Sentiment Analysis with Hardcoded Scores and Single-Article Processing
+  - **CRITICAL**: This test MUST FAIL on unfixed code - failure confirms the bug exists
+  - **DO NOT attempt to fix the test or the code when it fails**
+  - **NOTE**: This test encodes the expected behavior - it will validate the fix when it passes after implementation
+  - **GOAL**: Surface counterexamples that demonstrate the seven defects exist
+  - **Scoped PBT Approach**: Test concrete failing cases for each defect to ensure reproducibility
+  - Test Defect 1: Provide news with "bullish" keyword → Assert event_score is exactly 0.8 → Verify no confidence_score field exists
+  - Test Defect 2: Provide 3 high-impact articles (2 bullish, 1 bearish) → Assert only 1 article analyzed → Verify event_score doesn't reflect mixed sentiment
+  - Test Defect 3: Check LearningAgent for validation mechanism → Assert no sentiment accuracy tracking exists
+  - Test Defect 4: Parse event_toon output → Assert confidence_score and impact_magnitude fields are missing
+  - Test Defect 5: Mock LLM to raise exception → Assert event_score returns 0.5 with no retry → Verify no detailed error logging
+  - Test Defect 6: Execute trade based on event analysis → Assert LearningAgent receives no sentiment accuracy data
+  - Test Defect 7: Provide nuanced news "Earnings beat but guidance lowered" → Assert sentiment is purely bullish due to "beat" keyword
+  - Run test on UNFIXED code
+  - **EXPECTED OUTCOME**: Test FAILS (this is correct - it proves the bugs exist)
+  - Document counterexamples found to understand root causes
+  - Mark task complete when test is written, run, and failures are documented
+  - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7_
+
+- [x] 2. Write preservation property tests (BEFORE implementing fix)
+  - **Property 2: Preservation** - TOON Format and Agent Interface Compatibility
+  - **IMPORTANT**: Follow observation-first methodology
+  - Observe behavior on UNFIXED code for non-buggy inputs
+  - Observe: Low-impact news returns neutral sentiment with event_score 0.0
+  - Observe: Empty news list returns "event_score: 0.0\nevent_type: none\nimpact: neutral\nreason: no news available\n"
+  - Observe: FusionAgent successfully parses event_toon and extracts event_score field
+  - Observe: event_score is always between 0.0 and 1.0 on the defined scale
+  - Observe: analyze_news method accepts List[NewsData] and returns str (TOON format)
+  - Write property-based tests capturing these observed behavior patterns
+  - Property-based testing generates many test cases for stronger guarantees
+  - Run tests on UNFIXED code
+  - **EXPECTED OUTCOME**: Tests PASS (this confirms baseline behavior to preserve)
+  - Mark task complete when tests are written, run, and passing on unfixed code
+  - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7_
+
+- [x] 3. Fix for news sentiment accuracy issues
+
+  - [x] 3.1 Enhance LLM extraction prompt in EventAgent
+    - Modify DEEP_EXTRACT_PROMPT to request structured output with confidence and impact fields
+    - Add "confidence: <0.0-1.0 value indicating certainty>" to the prompt format
+    - Add "impact_magnitude: <0.0-1.0 value indicating expected market impact strength>" to the prompt format
+    - Update prompt instructions to ask LLM to reason about sentiment with full context rather than just keywords
+    - Example output: "confidence: 0.85" means LLM is 85% certain of its sentiment classification
+    - _Bug_Condition: isBugCondition(input) where input.sentiment_method == "keyword_matching" OR input.confidence_score IS NULL_
+    - _Expected_Behavior: LLM returns structured confidence and impact_magnitude fields in TOON format_
+    - _Preservation: Maintain TOON format structure and 0.0-1.0 scale for event_score_
+    - _Requirements: 1.1, 1.4, 1.7, 2.1, 2.4, 2.7_
+
+  - [x] 3.2 Implement multi-article aggregation logic in EventAgent
+    - Remove `top_news = high_impact_news[0]` single article selection
+    - Implement loop to extract sentiment from ALL high-impact articles
+    - Store each article's sentiment, confidence, and impact_magnitude in a list
+    - Implement confidence-weighted averaging: `final_score = sum(score_i * confidence_i * impact_i) / sum(confidence_i * impact_i)`
+    - Aggregate confidence as the weighted average of individual confidences
+    - _Bug_Condition: isBugCondition(input) where input.high_impact_articles.length > 1 AND input.analyzed_articles.length == 1_
+    - _Expected_Behavior: All high-impact articles analyzed and aggregated using confidence-weighted averaging_
+    - _Preservation: Maintain single-article processing for cases with only one high-impact article_
+    - _Requirements: 1.2, 2.2_
+
+  - [x] 3.3 Remove keyword-based scoring logic in EventAgent
+    - Delete lines 68-72 that use "bullish"/"bearish" string matching for score assignment
+    - Parse the LLM's returned sentiment value directly from the enhanced prompt
+    - Trust the LLM's reasoning rather than post-processing with keywords
+    - Ensure the LLM prompt returns a numeric sentiment score or clear classification that can be parsed
+    - _Bug_Condition: isBugCondition(input) where input.sentiment_score IN [0.2, 0.5, 0.8] AND input.confidence_score IS NULL_
+    - _Expected_Behavior: Sentiment scores derived from LLM reasoning, not hardcoded keyword matching_
+    - _Preservation: Maintain 0.0-1.0 scale where 0.5 is neutral, >0.5 is bullish, <0.5 is bearish_
+    - _Requirements: 1.1, 1.7, 2.1, 2.7, 3.6_
+
+  - [x] 3.4 Enhance TOON output format in EventAgent
+    - Add "confidence_score: <value>" field to quantify prediction certainty
+    - Add "impact_magnitude: <value>" field to indicate expected market impact strength
+    - Maintain backward compatibility by keeping existing fields (event_score, event_type, impact, reason)
+    - Example output: "event_score: 0.75\nconfidence_score: 0.82\nimpact_magnitude: 0.68\nevent_type: earnings\nimpact: bullish\nreason: Strong earnings beat with positive guidance\n"
+    - _Bug_Condition: isBugCondition(input) where input.confidence_in_toon_output == FALSE_
+    - _Expected_Behavior: TOON output includes confidence_score and impact_magnitude fields_
+    - _Preservation: Maintain existing TOON format structure and all existing fields_
+    - _Requirements: 1.4, 2.4, 3.3_
+
+  - [x] 3.5 Implement retry logic and error handling in EventAgent
+    - Add retry decorator or manual retry loop (3 attempts with exponential backoff)
+    - Log detailed error information (timestamp, symbol, article title, error message) to logs/ directory
+    - On final failure after retries, return error TOON with detailed reason rather than silent neutral default
+    - Consider fallback to a simpler model if primary model fails repeatedly
+    - _Bug_Condition: isBugCondition(input) where input.llm_extraction_failed AND input.retry_attempted == FALSE_
+    - _Expected_Behavior: Retry logic with exponential backoff and detailed error logging_
+    - _Preservation: Maintain error TOON format structure for downstream parsing_
+    - _Requirements: 1.5, 2.5_
+
+  - [x] 3.6 Add sentiment validation mechanism in LearningAgent
+    - Create new method `track_sentiment_accuracy(symbol, predicted_sentiment, predicted_confidence, trade_entry_time, trade_exit_time)`
+    - Fetch actual price movement during trade period using PriceService
+    - Calculate actual_direction = "bullish" if price increased, "bearish" if decreased
+    - Compare predicted_sentiment direction with actual_direction
+    - Store validation results in new table or extend TradePattern table with sentiment_accuracy field
+    - Calculate rolling accuracy metrics per symbol and market regime
+    - _Bug_Condition: isBugCondition(input) where input.validation_mechanism_exists == FALSE_
+    - _Expected_Behavior: Sentiment predictions validated against actual market movements_
+    - _Preservation: Maintain existing TradePattern table structure and evaluate_and_store method signature_
+    - _Requirements: 1.3, 2.3_
+
+  - [x] 3.7 Create feedback loop to EventAgent in LearningAgent
+    - Add method `get_event_agent_performance(market_regime)` that returns historical sentiment accuracy
+    - Store feedback in queryable format: {"regime": "earnings", "sentiment_accuracy": 0.72, "sample_size": 45}
+    - This data can be used to adjust confidence thresholds or provide context to LLM in future prompts
+    - _Bug_Condition: isBugCondition(input) where input.feedback_to_learning_agent == FALSE_
+    - _Expected_Behavior: Learning agent provides sentiment accuracy feedback for continuous improvement_
+    - _Preservation: Maintain existing LearningAgent interface and database schema_
+    - _Requirements: 1.6, 2.6_
+
+  - [x] 3.8 Implement confidence-aware weighting in FusionAgent
+    - Parse the new confidence_score field from event_toon
+    - Adjust event weight dynamically: `effective_event_weight = base_event_weight * confidence_score`
+    - If confidence is low (<0.5), reduce the event signal's influence on the final decision
+    - Update the explanation string to include confidence information: "Event confidence: 0.82"
+    - _Bug_Condition: isBugCondition(input) where input.confidence_in_toon_output == FALSE_
+    - _Expected_Behavior: Fusion logic incorporates confidence scores to adjust event signal weight_
+    - _Preservation: Maintain existing FusionAgent.synthesize method signature and decision thresholds_
+    - _Requirements: 1.4, 2.4, 3.7_
+
+  - [x] 3.9 Verify bug condition exploration test now passes
+    - **Property 1: Expected Behavior** - Confidence-Weighted Multi-Article Sentiment Analysis
+    - **IMPORTANT**: Re-run the SAME test from task 1 - do NOT write a new test
+    - The test from task 1 encodes the expected behavior
+    - When this test passes, it confirms the expected behavior is satisfied
+    - Run bug condition exploration test from step 1
+    - **EXPECTED OUTCOME**: Test PASSES (confirms bugs are fixed)
+    - Verify all seven defects are resolved:
+      - Defect 1: Confidence scores now included, no hardcoded 0.2/0.5/0.8 values
+      - Defect 2: All high-impact articles analyzed and aggregated
+      - Defect 3: Sentiment validation mechanism exists in LearningAgent
+      - Defect 4: confidence_score and impact_magnitude fields present in TOON output
+      - Defect 5: Retry logic implemented with detailed error logging
+      - Defect 6: LearningAgent receives sentiment accuracy feedback
+      - Defect 7: LLM reasoning captures nuanced sentiment, not keyword matching
+    - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7_
+
+  - [x] 3.10 Verify preservation tests still pass
+    - **Property 2: Preservation** - TOON Format and Agent Interface Compatibility
+    - **IMPORTANT**: Re-run the SAME tests from task 2 - do NOT write new tests
+    - Run preservation property tests from step 2
+    - **EXPECTED OUTCOME**: Tests PASS (confirms no regressions)
+    - Confirm all preservation requirements maintained:
+      - Low-impact news still returns neutral sentiment
+      - Empty news list still returns expected TOON string
+      - FusionAgent still successfully parses event_toon
+      - event_score still on 0.0-1.0 scale
+      - analyze_news method signature unchanged
+      - Two-stage triage approach unchanged
+      - TOON format structure preserved
+    - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7_
+
+- [x] 4. Checkpoint - Ensure all tests pass
+  - Run all unit tests for EventAgent, LearningAgent, and FusionAgent
+  - Run property-based tests for preservation checking
+  - Run integration test: fetch news → triage → multi-article extraction → aggregation → TOON output → fusion → trade
+  - Verify confidence scores influence fusion weighting correctly in various market regimes
+  - Verify sentiment validation tracks accuracy over multiple trades
+  - Verify learning agent receives and stores sentiment accuracy data
+  - Verify retry logic works with mocked LLM failures
+  - Verify enhanced error handling provides actionable debugging information
+  - Ensure all tests pass, ask the user if questions arise

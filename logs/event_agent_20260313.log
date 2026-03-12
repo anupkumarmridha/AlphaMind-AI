@@ -1,0 +1,122 @@
+2026-03-13 00:25:04,747 - agents.event_agent - WARNING - Attempt 1/3 failed for test: Exception: Temporary failure
+2026-03-13 00:25:04,748 - agents.event_agent - INFO - Retrying in 0.1 seconds...
+2026-03-13 00:25:04,853 - agents.event_agent - INFO - Retry succeeded on attempt 2 for test
+2026-03-13 00:25:04,893 - agents.event_agent - WARNING - Attempt 1/3 failed for test: Exception: Persistent failure
+2026-03-13 00:25:04,893 - agents.event_agent - INFO - Retrying in 0.1 seconds...
+2026-03-13 00:25:04,994 - agents.event_agent - WARNING - Attempt 2/3 failed for test: Exception: Persistent failure
+2026-03-13 00:25:04,994 - agents.event_agent - INFO - Retrying in 0.2 seconds...
+2026-03-13 00:25:05,196 - agents.event_agent - WARNING - Attempt 3/3 failed for test: Exception: Persistent failure
+2026-03-13 00:25:05,197 - agents.event_agent - ERROR - All 3 retry attempts exhausted for test. Final error: Exception: Persistent failure
+2026-03-13 00:25:05,229 - agents.event_agent - WARNING - Attempt 1/3 failed for test: Exception: Failure
+2026-03-13 00:25:05,229 - agents.event_agent - INFO - Retrying in 0.5 seconds...
+2026-03-13 00:25:05,734 - agents.event_agent - WARNING - Attempt 2/3 failed for test: Exception: Failure
+2026-03-13 00:25:05,735 - agents.event_agent - INFO - Retrying in 1.0 seconds...
+2026-03-13 00:25:06,739 - agents.event_agent - WARNING - Attempt 3/3 failed for test: Exception: Failure
+2026-03-13 00:25:06,739 - agents.event_agent - ERROR - All 3 retry attempts exhausted for test. Final error: Exception: Failure
+2026-03-13 00:26:18,732 - agents.event_agent - WARNING - Attempt 1/3 failed for test: Exception: Temporary failure
+2026-03-13 00:26:18,732 - agents.event_agent - INFO - Retrying in 0.1 seconds...
+2026-03-13 00:26:18,837 - agents.event_agent - INFO - Retry succeeded on attempt 2 for test
+2026-03-13 00:26:18,873 - agents.event_agent - WARNING - Attempt 1/3 failed for test: Exception: Persistent failure
+2026-03-13 00:26:18,873 - agents.event_agent - INFO - Retrying in 0.1 seconds...
+2026-03-13 00:26:18,978 - agents.event_agent - WARNING - Attempt 2/3 failed for test: Exception: Persistent failure
+2026-03-13 00:26:18,978 - agents.event_agent - INFO - Retrying in 0.2 seconds...
+2026-03-13 00:26:19,180 - agents.event_agent - WARNING - Attempt 3/3 failed for test: Exception: Persistent failure
+2026-03-13 00:26:19,180 - agents.event_agent - ERROR - All 3 retry attempts exhausted for test. Final error: Exception: Persistent failure
+2026-03-13 00:26:19,221 - agents.event_agent - WARNING - Attempt 1/3 failed for test: Exception: Failure
+2026-03-13 00:26:19,221 - agents.event_agent - INFO - Retrying in 0.5 seconds...
+2026-03-13 00:26:19,726 - agents.event_agent - WARNING - Attempt 2/3 failed for test: Exception: Failure
+2026-03-13 00:26:19,727 - agents.event_agent - INFO - Retrying in 1.0 seconds...
+2026-03-13 00:26:20,732 - agents.event_agent - WARNING - Attempt 3/3 failed for test: Exception: Failure
+2026-03-13 00:26:20,732 - agents.event_agent - ERROR - All 3 retry attempts exhausted for test. Final error: Exception: Failure
+2026-03-13 00:27:38,122 - agents.event_agent - WARNING - Attempt 1/3 failed for test: Exception: Temporary failure
+2026-03-13 00:27:38,123 - agents.event_agent - INFO - Retrying in 0.1 seconds...
+2026-03-13 00:27:38,224 - agents.event_agent - INFO - Retry succeeded on attempt 2 for test
+2026-03-13 00:27:38,258 - agents.event_agent - WARNING - Attempt 1/3 failed for test: Exception: Persistent failure
+2026-03-13 00:27:38,258 - agents.event_agent - INFO - Retrying in 0.1 seconds...
+2026-03-13 00:27:38,362 - agents.event_agent - WARNING - Attempt 2/3 failed for test: Exception: Persistent failure
+2026-03-13 00:27:38,362 - agents.event_agent - INFO - Retrying in 0.2 seconds...
+2026-03-13 00:27:38,567 - agents.event_agent - WARNING - Attempt 3/3 failed for test: Exception: Persistent failure
+2026-03-13 00:27:38,568 - agents.event_agent - ERROR - All 3 retry attempts exhausted for test. Final error: Exception: Persistent failure
+2026-03-13 00:27:38,608 - agents.event_agent - WARNING - Attempt 1/3 failed for test: Exception: Failure
+2026-03-13 00:27:38,609 - agents.event_agent - INFO - Retrying in 0.5 seconds...
+2026-03-13 00:27:39,114 - agents.event_agent - WARNING - Attempt 2/3 failed for test: Exception: Failure
+2026-03-13 00:27:39,114 - agents.event_agent - INFO - Retrying in 1.0 seconds...
+2026-03-13 00:27:40,115 - agents.event_agent - WARNING - Attempt 3/3 failed for test: Exception: Failure
+2026-03-13 00:27:40,116 - agents.event_agent - ERROR - All 3 retry attempts exhausted for test. Final error: Exception: Failure
+2026-03-13 00:27:40,154 - agents.event_agent - WARNING - Attempt 1/3 failed for test extraction: Exception: API timeout
+2026-03-13 00:27:40,154 - agents.event_agent - INFO - Retrying in 0.1 seconds...
+2026-03-13 00:27:40,257 - agents.event_agent - INFO - Retry succeeded on attempt 2 for test extraction
+2026-03-13 00:28:21,988 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-03-13 00:28:48,425 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-03-13 00:29:21,835 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-03-13 00:29:38,433 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-03-13 00:29:50,488 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-03-13 00:44:50,287 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-03-13 00:44:58,270 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-03-13 00:45:20,031 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-03-13 00:45:33,193 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-03-13 00:56:24,050 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-03-13 00:56:36,893 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-03-13 00:56:54,154 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-03-13 00:59:03,281 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-03-13 00:59:47,827 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-03-13 01:01:01,064 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-03-13 01:01:07,700 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-03-13 01:02:27,021 - agents.event_agent - WARNING - Attempt 1/3 failed for test: Exception: Temporary failure
+2026-03-13 01:02:27,021 - agents.event_agent - INFO - Retrying in 0.1 seconds...
+2026-03-13 01:02:27,124 - agents.event_agent - INFO - Retry succeeded on attempt 2 for test
+2026-03-13 01:02:27,164 - agents.event_agent - WARNING - Attempt 1/3 failed for test: Exception: Persistent failure
+2026-03-13 01:02:27,164 - agents.event_agent - INFO - Retrying in 0.1 seconds...
+2026-03-13 01:02:27,269 - agents.event_agent - WARNING - Attempt 2/3 failed for test: Exception: Persistent failure
+2026-03-13 01:02:27,269 - agents.event_agent - INFO - Retrying in 0.2 seconds...
+2026-03-13 01:02:27,474 - agents.event_agent - WARNING - Attempt 3/3 failed for test: Exception: Persistent failure
+2026-03-13 01:02:27,475 - agents.event_agent - ERROR - All 3 retry attempts exhausted for test. Final error: Exception: Persistent failure
+2026-03-13 01:02:27,508 - agents.event_agent - WARNING - Attempt 1/3 failed for test: Exception: Failure
+2026-03-13 01:02:27,508 - agents.event_agent - INFO - Retrying in 0.5 seconds...
+2026-03-13 01:02:28,013 - agents.event_agent - WARNING - Attempt 2/3 failed for test: Exception: Failure
+2026-03-13 01:02:28,014 - agents.event_agent - INFO - Retrying in 1.0 seconds...
+2026-03-13 01:02:29,019 - agents.event_agent - WARNING - Attempt 3/3 failed for test: Exception: Failure
+2026-03-13 01:02:29,019 - agents.event_agent - ERROR - All 3 retry attempts exhausted for test. Final error: Exception: Failure
+2026-03-13 01:02:29,051 - agents.event_agent - WARNING - Attempt 1/3 failed for test extraction: Exception: API timeout
+2026-03-13 01:02:29,051 - agents.event_agent - INFO - Retrying in 0.1 seconds...
+2026-03-13 01:02:29,153 - agents.event_agent - INFO - Retry succeeded on attempt 2 for test extraction
+2026-03-13 01:04:28,323 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-03-13 01:04:44,495 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-03-13 01:04:59,530 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-03-13 01:05:13,307 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 500 Internal Server Error"
+2026-03-13 01:05:13,309 - agents.event_agent - WARNING - Attempt 1/3 failed for triage for '...': ResponseError: Internal Server Error (status code: 500)
+2026-03-13 01:05:13,309 - agents.event_agent - INFO - Retrying in 1.0 seconds...
+2026-03-13 01:05:16,432 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-03-13 01:05:27,486 - agents.event_agent - INFO - Retry succeeded on attempt 2 for triage for '...'
+2026-03-13 01:05:28,329 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 500 Internal Server Error"
+2026-03-13 01:05:28,329 - agents.event_agent - WARNING - Attempt 1/3 failed for triage for '...': ResponseError: Internal Server Error (status code: 500)
+2026-03-13 01:05:28,329 - agents.event_agent - INFO - Retrying in 1.0 seconds...
+2026-03-13 01:05:33,530 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-03-13 01:05:45,562 - agents.event_agent - INFO - Retry succeeded on attempt 2 for triage for '...'
+2026-03-13 01:06:16,538 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 500 Internal Server Error"
+2026-03-13 01:06:16,539 - agents.event_agent - WARNING - Attempt 1/3 failed for triage for 'Company Reports Strong Earnings Beat...': ResponseError: Internal Server Error (status code: 500)
+2026-03-13 01:06:16,539 - agents.event_agent - INFO - Retrying in 1.0 seconds...
+2026-03-13 01:06:17,868 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 500 Internal Server Error"
+2026-03-13 01:06:17,869 - agents.event_agent - WARNING - Attempt 2/3 failed for triage for 'Company Reports Strong Earnings Beat...': ResponseError: Internal Server Error (status code: 500)
+2026-03-13 01:06:17,869 - agents.event_agent - INFO - Retrying in 2.0 seconds...
+2026-03-13 01:06:20,388 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 500 Internal Server Error"
+2026-03-13 01:06:20,388 - agents.event_agent - WARNING - Attempt 3/3 failed for triage for 'Company Reports Strong Earnings Beat...': ResponseError: Internal Server Error (status code: 500)
+2026-03-13 01:06:20,389 - agents.event_agent - ERROR - All 3 retry attempts exhausted for triage for 'Company Reports Strong Earnings Beat...'. Final error: ResponseError: Internal Server Error (status code: 500)
+2026-03-13 01:06:20,389 - agents.event_agent - ERROR - Triage failed after retries for article 'Company Reports Strong Earnings Beat': ResponseError: Internal Server Error (status code: 500). Assuming high impact.
+2026-03-13 01:06:20,945 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 500 Internal Server Error"
+2026-03-13 01:06:20,946 - agents.event_agent - WARNING - Attempt 1/3 failed for triage for 'Analyst Upgrades Stock to Buy...': ResponseError: Internal Server Error (status code: 500)
+2026-03-13 01:06:20,946 - agents.event_agent - INFO - Retrying in 1.0 seconds...
+2026-03-13 01:06:28,523 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-03-13 01:06:34,916 - agents.event_agent - INFO - Retry succeeded on attempt 2 for triage for 'Analyst Upgrades Stock to Buy...'
+2026-03-13 01:06:38,040 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-03-13 01:06:45,857 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-03-13 01:07:43,834 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 500 Internal Server Error"
+2026-03-13 01:07:43,835 - agents.event_agent - WARNING - Attempt 1/3 failed for extraction for 'Product Recall Announced...': ResponseError: Internal Server Error (status code: 500)
+2026-03-13 01:07:43,836 - agents.event_agent - INFO - Retrying in 1.0 seconds...
+2026-03-13 01:07:46,407 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 500 Internal Server Error"
+2026-03-13 01:07:46,408 - agents.event_agent - WARNING - Attempt 2/3 failed for extraction for 'Product Recall Announced...': ResponseError: Internal Server Error (status code: 500)
+2026-03-13 01:07:46,408 - agents.event_agent - INFO - Retrying in 2.0 seconds...
+2026-03-13 01:07:59,421 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-03-13 01:09:07,393 - agents.event_agent - INFO - Retry succeeded on attempt 3 for extraction for 'Product Recall Announced...'
+2026-03-13 01:09:08,779 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-03-13 01:09:14,817 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
