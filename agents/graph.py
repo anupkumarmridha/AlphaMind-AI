@@ -52,7 +52,7 @@ def run_technical_agent(state: TradingState):
 
 def run_event_agent(state: TradingState):
     print(f"[{state['symbol']}] Running Event Agent...")
-    data = event_agent.analyze(state["news_list"])
+    data = event_agent.analyze_news(state["news_list"])
     return {"event_data": data}
 
 def run_risk_agent(state: TradingState):

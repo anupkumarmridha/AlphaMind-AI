@@ -7,6 +7,13 @@ from langchain_ollama import ChatOllama
 from langchain_core.prompts import PromptTemplate
 from data.schema import NewsData
 
+# Load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # dotenv not installed, will use system environment variables
+
 # Configure logging for error tracking
 log_dir = "logs"
 os.makedirs(log_dir, exist_ok=True)
@@ -59,27 +66,30 @@ Content: {content}
 
 class EventAgent:
     def __init__(self):
-        # Using Local Ollama
-        # We will use llama3 as the default, but you can change this to any installed model
+        # Using local Ollama; models are configurable by environment variables.
         ollama_base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+        default_model = os.getenv("OLLAMA_MODEL", "kimi-k2.5:cloud")
+        triage_model = os.getenv("EVENT_TRIAGE_MODEL", default_model)
+        extract_model = os.getenv("EVENT_EXTRACT_MODEL", default_model)
+        fallback_model = os.getenv("EVENT_FALLBACK_MODEL", "llama3.2:latest")
         
         # Fast model for Triage
         self.triage_llm = ChatOllama(
-            model="kimi-k2.5:cloud", 
+            model=triage_model,
             temperature=0.0,
             base_url=ollama_base_url
         )
         
         # Heavy model for deep extraction
         self.extract_llm = ChatOllama(
-            model="kimi-k2.5:cloud", 
+            model=extract_model,
             temperature=0.0,
             base_url=ollama_base_url
         )
         
         # Fallback model for when primary model fails
         self.fallback_llm = ChatOllama(
-            model="llama3.2:latest",
+            model=fallback_model,
             temperature=0.0,
             base_url=ollama_base_url
         )

@@ -7,6 +7,9 @@ __pycache__/
 .venv/
 venv/
 
+# Environment variables
+.env
+
 # Local runtime artifacts
 *.log
 backend/alphamind.db
