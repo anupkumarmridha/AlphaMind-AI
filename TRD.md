@@ -112,12 +112,32 @@ Instead of polling, the system uses an event-driven approach. When Data Layer re
 #### Logic:
 
 * **LLM Router (Triage)**:
-  * Fast, cheap model (e.g., Llama-3-8B or gpt-4o-mini) to filter noise.
+  * Fast model (configurable via `EVENT_TRIAGE_MODEL`) to filter noise
+  * Defaults to `OLLAMA_MODEL` if not specified
 * **Deep Extraction**:
-  * Heavy model (e.g. gpt-4o or claude-3.5-sonnet) for high impact news:
+  * Heavy model (configurable via `EVENT_EXTRACT_MODEL`) for high impact news:
     * event type
     * numbers (revenue, profit)
+    * sentiment with confidence scores
+* **Fallback Model**:
+  * Configurable via `EVENT_FALLBACK_MODEL` (defaults to `llama3.2:latest`)
+  * Used when primary models fail
 * QoQ / YoY comparison
+
+#### Configuration:
+Models are configured via environment variables in `.env`:
+* `OLLAMA_BASE_URL`: Ollama server URL (default: http://localhost:11434)
+* `OLLAMA_MODEL`: Default model for all agents (default: kimi-k2.5:cloud)
+* `EVENT_TRIAGE_MODEL`: Fast model for news relevance filtering (defaults to `OLLAMA_MODEL`)
+* `EVENT_EXTRACT_MODEL`: Heavy model for sentiment extraction (defaults to `OLLAMA_MODEL`)
+* `EVENT_FALLBACK_MODEL`: Fallback when primary models fail (default: llama3.2:latest)
+
+**Environment Variable Loading:**
+- Automatically loads from `.env` file using `python-dotenv`
+- Falls back to system environment variables if library not available
+- No code changes needed to switch models
+
+This allows optimization by using faster models for triage and more capable models for extraction, with automatic fallback for resilience.
 
 #### Output Format:
 * Use **TOON (Token-Optimized Object Notation)** for LLM outputs to save tokens and reduce latency.
@@ -125,6 +145,8 @@ Instead of polling, the system uses an event-driven approach. When Data Layer re
 ```yaml
 # Example TOON Output
 event_score: float
+confidence_score: float
+impact_magnitude: float
 event_type: earnings/deal/risk
 impact: bullish/bearish
 reason: string

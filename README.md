@@ -52,7 +52,7 @@ Agents run in parallel after data fetch and converge at the fusion node, orchest
 - Python 3.x
 - Node.js and npm
 - `uv` package manager
-- OpenAI API key
+- Ollama with required models installed (kimi-k2.5:cloud, llama3.2:latest)
 
 ### Backend Setup
 
@@ -62,14 +62,53 @@ uv venv
 source .venv/bin/activate  # macOS/Linux
 
 # Install dependencies
-uv pip install fastapi uvicorn pandas numpy yfinance langchain langchain-openai langgraph sqlalchemy pydantic
+uv pip install fastapi uvicorn pandas numpy yfinance langchain langchain-openai langgraph sqlalchemy pydantic python-dotenv
 
-# Set environment variables
-export OPENAI_API_KEY=your_api_key_here
+# Configure environment variables
+cp .env.example .env
+# Edit .env with your configuration (Ollama URL, models, database paths)
+
+# Verify environment configuration (recommended first step)
+python test_env_config.py
 
 # Run the server
 python backend/app.py
 ```
+
+### Configuration
+
+The system uses environment variables for flexible configuration without code changes. Copy `.env.example` to `.env` and customize:
+
+```bash
+# Ollama Configuration
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=kimi-k2.5:cloud
+
+# Event Agent Models (optional - defaults to OLLAMA_MODEL)
+EVENT_TRIAGE_MODEL=kimi-k2.5:cloud      # Fast model for news triage
+EVENT_EXTRACT_MODEL=kimi-k2.5:cloud     # Heavy model for sentiment extraction
+EVENT_FALLBACK_MODEL=llama3.2:latest    # Fallback when primary model fails
+
+# Database Configuration
+DATABASE_URL=sqlite:///backend/alphamind.db
+LEARNING_DATABASE_URL=sqlite:///backend/alphamind_learning.db
+ALPHAMIND_DB_PATH=backend/alphamind.db
+
+# Logging
+LOG_LEVEL=INFO
+```
+
+**Environment Variable Loading:**
+- EventAgent automatically loads variables from `.env` using `python-dotenv`
+- Falls back to system environment variables if `python-dotenv` is not installed
+- No code changes needed to switch models - just edit `.env`
+
+**EventAgent Model Configuration:**
+- `EVENT_TRIAGE_MODEL`: Fast news relevance filtering (defaults to `OLLAMA_MODEL`)
+- `EVENT_EXTRACT_MODEL`: Deep sentiment analysis (defaults to `OLLAMA_MODEL`)
+- `EVENT_FALLBACK_MODEL`: Fallback when primary models fail (defaults to `llama3.2:latest`)
+
+This three-tier model strategy optimizes performance by using faster models for triage and more capable models for extraction, with automatic fallback for resilience.
 
 ### Frontend Setup
 
@@ -82,6 +121,39 @@ npm run dev
 The frontend will be available at http://localhost:5173 and the backend API at http://localhost:8000.
 
 ## Usage
+
+### Verifying Configuration
+
+**Important**: Before running the trading pipeline, verify your environment configuration:
+
+```bash
+# Test environment variables and Ollama integration
+python test_env_config.py
+```
+
+This verification test will:
+- ✅ Verify all environment variables are loaded correctly
+- ✅ Check EventAgent model configuration (triage, extract, fallback)
+- ✅ Test Ollama connectivity and model availability
+- ✅ Perform a simple news analysis to confirm functionality
+- ✅ Confirm TOON format output with confidence scores
+
+**Expected Output:**
+```
+=== Environment Configuration Test ===
+✅ All environment variables loaded correctly
+
+=== EventAgent Initialization Test ===
+✅ EventAgent initialized with correct models:
+  - Triage Model: kimi-k2.5:cloud
+  - Extract Model: kimi-k2.5:cloud
+  - Fallback Model: llama3.2:latest
+  - Base URL: http://localhost:11434
+
+=== Simple News Analysis Test ===
+✅ Successfully analyzed test news article
+✅ Generated proper TOON format output with confidence scores
+```
 
 ### Running the Trading Pipeline
 
@@ -177,9 +249,27 @@ See `.kiro/specs/news-sentiment-accuracy-fix/` for detailed requirements, design
 - **TRD.md**: Technical Requirements Document
 - **ARD.md**: Architecture Requirements Document
 - **Implementation Plan.md**: Development roadmap
+- **ENVIRONMENT_SETUP_SUMMARY.md**: Environment configuration guide and setup verification
 - **.kiro/specs/**: Feature specifications and implementation tasks
   - **backtesting-engine/**: Historical strategy validation and performance analysis
   - **news-sentiment-accuracy-fix/**: EventAgent sentiment analysis improvements
+
+## Configuration Management
+
+### Environment Variables
+All configuration is managed through environment variables in `.env`:
+- **Flexibility**: Switch between Ollama models without code changes
+- **Security**: Sensitive configuration excluded from version control
+- **Portability**: Each developer can maintain their own local configuration
+- **Testing**: Easy to test with different model configurations
+
+### Model Selection Strategy
+The system uses a three-tier model approach for optimal performance:
+1. **Triage Model**: Fast filtering of irrelevant news (configurable via `EVENT_TRIAGE_MODEL`)
+2. **Extract Model**: Deep sentiment analysis for high-impact news (configurable via `EVENT_EXTRACT_MODEL`)
+3. **Fallback Model**: Automatic fallback when primary models fail (configurable via `EVENT_FALLBACK_MODEL`)
+
+See `ENVIRONMENT_SETUP_SUMMARY.md` for detailed setup instructions and troubleshooting.
 
 ## License
 
