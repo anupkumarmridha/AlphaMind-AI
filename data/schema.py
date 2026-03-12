@@ -13,7 +13,7 @@ class PriceData(BaseModel):
 class NewsData(BaseModel):
     title: str
     content: str
-    date: datetime
+    date: Optional[datetime] = None
     url: str
     publisher: Optional[str] = None
 

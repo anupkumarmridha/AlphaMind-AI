@@ -9,8 +9,11 @@ class NewsService:
         """
         Fetch recent news articles for a symbol using yfinance.
         """
-        ticker = yf.Ticker(symbol)
-        raw_news = ticker.news
+        try:
+            ticker = yf.Ticker(symbol)
+            raw_news = ticker.news or []
+        except Exception:
+            return []
         
         news_data_list = []
         for item in raw_news[:max_items]:
@@ -20,12 +23,12 @@ class NewsService:
             url = item.get('link', '')
             publisher = item.get('publisher', '')
             
-            # Convert timestamp to datetime
+            # Convert timestamp to datetime; keep missing values as None.
             pub_date = item.get('providerPublishTime')
             if pub_date:
                 date_obj = datetime.fromtimestamp(pub_date)
             else:
-                date_obj = datetime.now()
+                date_obj = None
                 
             news_data_list.append(NewsData(
                 title=title,
