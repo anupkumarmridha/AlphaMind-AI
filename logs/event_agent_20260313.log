@@ -120,3 +120,28 @@
 2026-03-13 01:09:07,393 - agents.event_agent - INFO - Retry succeeded on attempt 3 for extraction for 'Product Recall Announced...'
 2026-03-13 01:09:08,779 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
 2026-03-13 01:09:14,817 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-03-13 01:20:43,873 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 500 Internal Server Error"
+2026-03-13 01:20:43,875 - agents.event_agent - WARNING - Attempt 1/3 failed for triage for '...': ResponseError: Internal Server Error (status code: 500)
+2026-03-13 01:20:43,875 - agents.event_agent - INFO - Retrying in 1.0 seconds...
+2026-03-13 01:20:51,376 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-03-13 01:21:01,466 - agents.event_agent - INFO - Retry succeeded on attempt 2 for triage for '...'
+2026-03-13 01:21:03,995 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-03-13 01:21:18,789 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-03-13 01:22:47,482 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 500 Internal Server Error"
+2026-03-13 01:22:47,483 - agents.event_agent - WARNING - Attempt 1/3 failed for triage for '...': ResponseError: Internal Server Error (status code: 500)
+2026-03-13 01:22:47,483 - agents.event_agent - INFO - Retrying in 1.0 seconds...
+2026-03-13 01:22:50,284 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 500 Internal Server Error"
+2026-03-13 01:22:50,285 - agents.event_agent - WARNING - Attempt 2/3 failed for triage for '...': ResponseError: Internal Server Error (status code: 500)
+2026-03-13 01:22:50,285 - agents.event_agent - INFO - Retrying in 2.0 seconds...
+2026-03-13 01:22:57,121 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-03-13 01:23:26,332 - agents.event_agent - INFO - Retry succeeded on attempt 3 for triage for '...'
+2026-03-13 01:23:34,065 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-03-13 01:23:49,117 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 500 Internal Server Error"
+2026-03-13 01:23:49,118 - agents.event_agent - WARNING - Attempt 1/3 failed for triage for '...': ResponseError: Internal Server Error (status code: 500)
+2026-03-13 01:23:49,118 - agents.event_agent - INFO - Retrying in 1.0 seconds...
+2026-03-13 01:23:57,820 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-03-13 01:24:38,522 - agents.event_agent - INFO - Retry succeeded on attempt 2 for triage for '...'
+2026-03-13 01:24:39,548 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-03-13 01:24:54,551 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-03-13 01:26:56,201 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-03-13 01:27:00,296 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"

@@ -227,21 +227,63 @@ Agent signals are weighted dynamically based on market conditions (normal, volat
 
 ## Known Issues
 
-### News Sentiment Accuracy (In Progress)
+### News Sentiment Accuracy (Completed)
 
-The EventAgent's sentiment analysis currently has limitations that affect trading decision accuracy:
+The EventAgent's sentiment analysis had limitations that affected trading decision accuracy. These issues have been addressed through a comprehensive bugfix:
 
-- **Hardcoded Scores**: Uses keyword matching ("bullish"/"bearish") with fixed scores (0.8/0.2/0.5) instead of LLM confidence levels
-- **Single Article Analysis**: Only processes the first high-impact article, ignoring subsequent important news
-- **No Validation**: Lacks mechanism to track sentiment prediction accuracy against actual market movements
-- **Missing Confidence Scores**: Doesn't provide uncertainty quantification to downstream fusion logic
-- **Limited Error Handling**: Silent failures with neutral defaults when LLM extraction errors occur
-- **No Learning Feedback**: Learning agent receives no sentiment accuracy data for continuous improvement
-- **Keyword Limitations**: Cannot capture nuanced sentiment with conditional logic or mixed signals
+- ✅ **Confidence Scores**: Now uses LLM-generated confidence levels instead of hardcoded keyword matching
+- ✅ **Multi-Article Analysis**: Processes all high-impact articles with confidence-weighted aggregation
+- ✅ **Sentiment Validation**: Tracks prediction accuracy against actual market movements
+- ✅ **Enhanced TOON Output**: Includes confidence_score and impact_magnitude fields
+- ✅ **Robust Error Handling**: Retry logic with exponential backoff and detailed error logging
+- ✅ **Learning Feedback**: Provides sentiment accuracy data to learning agent for continuous improvement
 
-**Fix Status**: A comprehensive bugfix specification is available in `.kiro/specs/news-sentiment-accuracy-fix/` that addresses all seven defects through confidence-weighted multi-article aggregation, sentiment validation against market movements, enhanced TOON output with confidence scores, robust retry logic, and feedback loops to the learning agent.
+See `.kiro/specs/news-sentiment-accuracy-fix/` for detailed requirements, design, and implementation.
 
-See `.kiro/specs/news-sentiment-accuracy-fix/` for detailed requirements, design, and implementation tasks.
+### Multi-Agent System Reliability (Planned)
+
+The AlphaMind AI system has identified critical bugs across all agents that can cause crashes, incorrect calculations, and poor trading decisions:
+
+**TechnicalAgent Issues:**
+- Division by zero errors in RSI calculations when loss rolling mean equals zero
+- NaN/inf propagation from insufficient price variation
+- Missing validation for invalid price data (zeros, missing values)
+- No bounds checking on calculated indicators before use
+
+**RiskAgent Issues:**
+- Insufficient data errors lack detail on minimum required data points
+- No special handling for extreme market conditions (flash crashes, circuit breakers)
+- Hardcoded risk thresholds without regime-specific adjustments
+- Missing gap risk and overnight risk considerations
+
+**FusionAgent Issues:**
+- Silent parsing failures with no error logging
+- Weight validation missing after confidence adjustments
+- Undocumented context weight redistribution logic
+- No bounds checking on final_signal before decision logic
+
+**TradeAgent Issues:**
+- No maximum position limits enforcement across open trades
+- Missing capital availability checks before trade execution
+- Stop loss/target calculations don't account for market hours and gaps
+- No handling for partial fills or order rejections
+
+**LearningAgent Issues:**
+- SQLite fallback fails silently on pgvector operations
+- No connection pooling or retry logic for database operations
+- Hardcoded embedding dimensions (1536) limit model flexibility
+- Unbounded database growth without cleanup mechanism
+
+**Graph Orchestration Issues:**
+- No timeout handling for long-running agent operations
+- Missing circuit breaker for repeated agent failures
+- No state validation between node transitions
+- No rollback mechanism for mid-execution failures
+- Missing state transition logging for debugging
+
+**Fix Status**: A comprehensive bugfix specification is available in `.kiro/specs/multi-agent-system-fixes/` that addresses all 30 identified defects across TechnicalAgent, RiskAgent, FusionAgent, TradeAgent, LearningAgent, and Graph orchestration with proper error handling, validation, and resilience mechanisms.
+
+See `.kiro/specs/multi-agent-system-fixes/` for detailed requirements, design, and implementation tasks.
 
 ## Documentation
 
@@ -252,7 +294,8 @@ See `.kiro/specs/news-sentiment-accuracy-fix/` for detailed requirements, design
 - **ENVIRONMENT_SETUP_SUMMARY.md**: Environment configuration guide and setup verification
 - **.kiro/specs/**: Feature specifications and implementation tasks
   - **backtesting-engine/**: Historical strategy validation and performance analysis
-  - **news-sentiment-accuracy-fix/**: EventAgent sentiment analysis improvements
+  - **news-sentiment-accuracy-fix/**: EventAgent sentiment analysis improvements (completed)
+  - **multi-agent-system-fixes/**: System-wide reliability and error handling improvements (planned)
 
 ## Configuration Management
 
