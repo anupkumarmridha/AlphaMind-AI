@@ -1,0 +1,4 @@
+# file: /Users/anup/Developer/AlphaMind AI/agents/technical_agent.py
+# hypothesis_version: 6.151.9
+
+[0.0, 0.1, 0.2, 0.5, 1.0, 100, ', ', 'EMA20 < EMA50', 'EMA20 > EMA50', 'EMA_20', 'EMA_50', 'RSI_14', 'Vol_20', 'Vol_5', 'Volume falling', 'Volume rising', 'bearish', 'bullish', 'close', 'insufficient data', 'momentum', 'neutral', 'reason', 'strong', 'technical_score', 'timestamp', 'trend', 'unknown', 'volume', 'weak']

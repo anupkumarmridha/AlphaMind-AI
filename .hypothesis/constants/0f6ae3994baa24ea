@@ -1,0 +1,4 @@
+# file: /Users/anup/Developer/AlphaMind AI/agents/learning_agent.py
+# hypothesis_version: 6.151.9
+
+[-0.5, 0.0, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.75, 1.0, 100, 1536, 'CLOSED', 'DATABASE_URL', 'actual_direction', 'all', 'bearish', 'bearish_accuracy', 'bearish_samples', 'bullish', 'bullish_accuracy', 'bullish_samples', 'confidence', 'context', 'earnings', 'event', 'is_accurate', 'market_regime', 'message', 'min_samples_required', 'neutral', 'neutral_accuracy', 'neutral_samples', 'notes', 'overall_accuracy', 'postgresql', 'predicted_sentiment', 'price_change_percent', 'recommendations', 'regime', 'risk', 'sample_size', 'sentiment_accuracy', 'sqlite:///:memory:', 'suggested_threshold', 'symbol', 'technical', 'trade_patterns', 'unknown', 'validation_id']

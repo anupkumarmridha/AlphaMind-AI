@@ -240,48 +240,54 @@ The EventAgent's sentiment analysis had limitations that affected trading decisi
 
 See `.kiro/specs/news-sentiment-accuracy-fix/` for detailed requirements, design, and implementation.
 
-### Multi-Agent System Reliability (Planned)
+### Multi-Agent System Reliability
 
-The AlphaMind AI system has identified critical bugs across all agents that can cause crashes, incorrect calculations, and poor trading decisions:
+The AlphaMind AI system has identified and is actively fixing critical bugs across all agents. A comprehensive bugfix spec addresses 30 defects across 6 components — all fixed.
 
-**TechnicalAgent Issues:**
-- Division by zero errors in RSI calculations when loss rolling mean equals zero
-- NaN/inf propagation from insufficient price variation
-- Missing validation for invalid price data (zeros, missing values)
-- No bounds checking on calculated indicators before use
+**Fix Status:**
 
-**RiskAgent Issues:**
-- Insufficient data errors lack detail on minimum required data points
-- No special handling for extreme market conditions (flash crashes, circuit breakers)
-- Hardcoded risk thresholds without regime-specific adjustments
-- Missing gap risk and overnight risk considerations
+- ✅ **TechnicalAgent** (Bugs 1.1-1.5) — Fixed
+  - RSI division by zero handled with safe division and epsilon guard
+  - Flat price history (gain=0, loss=0) now returns clean neutral state instead of propagating NaN
+  - Input validation rejects all-zero, NaN, and inf price data
+  - Zero volume handled gracefully with neutral contribution
+  - Post-calculation bounds checking on all indicators
 
-**FusionAgent Issues:**
-- Silent parsing failures with no error logging
-- Weight validation missing after confidence adjustments
-- Undocumented context weight redistribution logic
-- No bounds checking on final_signal before decision logic
+- ✅ **RiskAgent** (Bugs 1.6-1.10) — Fixed
+  - Detailed error messages include actual vs. required data point counts
+  - Extreme condition detection (volatility spikes, price gaps, volume spikes)
+  - Regime-specific risk thresholds (normal / earnings / volatile)
+  - Gap risk analysis incorporated into risk score
+  - NaN detection logged with full context before early return
 
-**TradeAgent Issues:**
-- No maximum position limits enforcement across open trades
-- Missing capital availability checks before trade execution
-- Stop loss/target calculations don't account for market hours and gaps
-- No handling for partial fills or order rejections
+- ✅ **FusionAgent** (Bugs 1.11-1.15) — Fixed
+  - Parse errors logged with field name and problematic value
+  - Weight validation and normalization after confidence adjustments
+  - Context weight redistribution logic documented inline
+  - Comprehensive TOON field validation with defaults for missing fields
+  - `final_signal` clamped to [-1, 1] before decision logic
 
-**LearningAgent Issues:**
-- SQLite fallback fails silently on pgvector operations
-- No connection pooling or retry logic for database operations
-- Hardcoded embedding dimensions (1536) limit model flexibility
-- Unbounded database growth without cleanup mechanism
+- ✅ **TradeAgent** (Bugs 1.16-1.20) — Fixed
+  - Position limit enforcement across all open trades (max 50% total exposure)
+  - Capital availability checked before every trade execution
+  - Overnight stop loss widened to 3% to account for gap risk
+  - Partial fill simulation and order rejection handling with logging
+  - Position size validated (bounds, NaN/inf, max allocation) before execution
 
-**Graph Orchestration Issues:**
-- No timeout handling for long-running agent operations
-- Missing circuit breaker for repeated agent failures
-- No state validation between node transitions
-- No rollback mechanism for mid-execution failures
-- Missing state transition logging for debugging
+- ✅ **LearningAgent** (Bugs 1.21-1.25) — Fixed
+  - SQLite detected at init; pgvector operations disabled with fallback storage
+  - Connection pooling (QueuePool, size=5) with pool_pre_ping for stale connections
+  - Retry logic with exponential backoff (1s/2s/4s) for transient DB failures
+  - Embedding dimension configurable via `EMBEDDING_DIMENSION` env var (default 1536)
+  - Automatic cleanup of old validation records via `VALIDATION_RETENTION_DAYS`
+  - Graceful degradation: DB failures return fallback weights instead of crashing
 
-**Fix Status**: A comprehensive bugfix specification is available in `.kiro/specs/multi-agent-system-fixes/` that addresses all 30 identified defects across TechnicalAgent, RiskAgent, FusionAgent, TradeAgent, LearningAgent, and Graph orchestration with proper error handling, validation, and resilience mechanisms.
+- ✅ **Graph Orchestration** (Bugs 1.26-1.30) — Fixed
+  - Per-agent timeout handling (technical=30s, event=60s, risk/fusion=30s/10s)
+  - Circuit breaker pattern: opens after 3 consecutive failures, recovers after 60s
+  - State validation at each node transition with required-field checks
+  - Checkpoint/rollback mechanism restores last known good state on failure
+  - Structured transition logging at entry/exit of every node with key state values
 
 See `.kiro/specs/multi-agent-system-fixes/` for detailed requirements, design, and implementation tasks.
 
@@ -295,7 +301,7 @@ See `.kiro/specs/multi-agent-system-fixes/` for detailed requirements, design, a
 - **.kiro/specs/**: Feature specifications and implementation tasks
   - **backtesting-engine/**: Historical strategy validation and performance analysis
   - **news-sentiment-accuracy-fix/**: EventAgent sentiment analysis improvements (completed)
-  - **multi-agent-system-fixes/**: System-wide reliability and error handling improvements (planned)
+  - **multi-agent-system-fixes/**: System-wide reliability and error handling improvements (completed — all 6 components fixed, 30 bugs resolved)
 
 ## Configuration Management
 

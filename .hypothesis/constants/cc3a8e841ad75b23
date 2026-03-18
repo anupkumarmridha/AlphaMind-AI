@@ -1,0 +1,4 @@
+# file: /Users/anup/Developer/AlphaMind AI/agents/trade_agent.py
+# hypothesis_version: 6.151.9
+
+[0.0, 0.001, 0.5, 0.96, 0.98, 1.02, 1.04, 1.5, 5.0, 10000.0, 'BUY', 'NO_TRADE', 'SELL', 'Stop Loss Hit', 'Target Hit', 'decision', 'position_size']

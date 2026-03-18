@@ -1,0 +1,4 @@
+# file: /Users/anup/Developer/AlphaMind AI/agents/event_agent.py
+# hypothesis_version: 6.151.9
+
+[0.0, 0.5, 0.8, 1.0, 2.0, ' (fallback model)', ':', '; ', 'EVENT_EXTRACT_MODEL', 'EVENT_FALLBACK_MODEL', 'EVENT_TRIAGE_MODEL', 'HIGH', 'OLLAMA_BASE_URL', 'OLLAMA_MODEL', 'bearish', 'bullish', 'confidence', 'content', 'event_type', 'fallback_error', 'impact', 'impact_magnitude', 'kimi-k2.5:cloud', 'llama3.2:latest', 'logs', 'neutral', 'none', 'numbers', 'other', 'primary_error', 'reason', 'sentiment_score', 'title']

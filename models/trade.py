@@ -16,6 +16,8 @@ class Trade(BaseModel):
     stop_loss: float
     target: float
     
+    actual_fill_size: Optional[float] = None  # actual filled size (may differ from position_size on partial fills)
+    
     status: str = "OPEN" # OPEN, CLOSED
     timestamp: datetime = Field(default_factory=datetime.now)
     

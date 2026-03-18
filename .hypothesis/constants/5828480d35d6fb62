@@ -1,0 +1,4 @@
+# file: /Users/anup/Developer/AlphaMind AI/data/price_service.py
+# hypothesis_version: 6.151.9
+
+['1d', '1mo', 'Close', 'High', 'Low', 'Open', 'Volume']

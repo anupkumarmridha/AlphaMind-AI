@@ -1,0 +1,4 @@
+# file: /Users/anup/Developer/AlphaMind AI/data/news_service.py
+# hypothesis_version: 6.151.9
+
+['link', 'providerPublishTime', 'publisher', 'summary', 'title']

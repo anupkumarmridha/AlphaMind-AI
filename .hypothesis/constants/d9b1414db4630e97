@@ -1,0 +1,4 @@
+# file: /Users/anup/Developer/AlphaMind AI/models/trade.py
+# hypothesis_version: 6.151.9
+
+[0.0, 'BUY', 'CLOSED', 'OPEN', 'SELL']

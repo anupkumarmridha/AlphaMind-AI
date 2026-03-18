@@ -1,0 +1,4 @@
+# file: /Users/anup/Developer/AlphaMind AI/agents/graph.py
+# hypothesis_version: 6.151.9
+
+[-1.0, -0.15, 0.0, 0.15, 0.4, 0.5, 1.0, 200, 1536, '50d', 'BUY', 'CLOSED', 'NO_TRADE', 'avg_return', 'closed_trades', 'confidence', 'context', 'context_data', 'decision', 'decision_data', 'event', 'event_data', 'fetch_data', 'fusion', 'historical_win_rate', 'market_regime', 'news_list', 'normal', 'position_size', 'price_history', 'reason', 'risk', 'risk_data', 'symbol', 'target', 'technical', 'technical_data', 'trade', 'trade_executed']

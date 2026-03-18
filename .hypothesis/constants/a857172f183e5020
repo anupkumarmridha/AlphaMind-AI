@@ -1,0 +1,4 @@
+# file: /Users/anup/Developer/AlphaMind AI/backend/storage.py
+# hypothesis_version: 6.151.9
+
+[100, 'ALPHAMIND_DB_PATH', 'action', 'alphamind.db', 'backend', 'commission_fee', 'confidence', 'decision', 'desired_entry', 'exit_price', 'exit_reason', 'exit_timestamp', 'fill_price', 'id', 'json', 'market_regime', 'name', 'payload', 'position_size', 'raw_json', 'status', 'stop_loss', 'symbol', 'target', 'timestamp']
